@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<!-- Repérages — carnet de sorties photo — © 2026 Michel Masquelier (michy). Tous droits réservés.
+     Application personnelle, non destinée à la revente ou à la redistribution. -->
+<meta name="author" content="Michel Masquelier (michy)">
+<meta name="copyright" content="© 2026 Michel Masquelier (michy)">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1F2937">
+<title>Repérages</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231F2937'/%3E%3Crect x='28' y='14' width='44' height='72' rx='7' fill='none' stroke='%23F9FAFB' stroke-width='5'/%3E%3Ccircle cx='50' cy='36' r='11' fill='none' stroke='%23B45309' stroke-width='5'/%3E%3Ccircle cx='50' cy='66' r='13' fill='%23B45309'/%3E%3Ccircle cx='54' cy='62' r='3.5' fill='%23F9FAFB'/%3E%3C/svg%3E">
+<style>
+:root{
+  --anthracite:#1F2937;
+  --ambre:#B45309;
+  --ambre-clair:#FDF3E7;
+  --fond:#F6F5F2;
+  --carte:#FFFFFF;
+  --texte:#1F2937;
+  --texte-2:#6B7280;
+  --bord:#E3E1DC;
+  --danger:#B42318;
+  --ok:#1B7A43;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{
+  font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--fond);color:var(--texte);line-height:1.5;
+  min-height:100vh;
+}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font:inherit;color:inherit}
+img{display:block;max-width:100%}
+
+/* ---------- Barre d'application ---------- */
+.appbar{
+  position:sticky;top:0;z-index:20;
+  background:var(--anthracite);color:#F9FAFB;
+  display:flex;align-items:center;gap:.7rem;
+  padding:.8rem 1rem;
+  padding-top:calc(.8rem + env(safe-area-inset-top));
+  box-shadow:0 1px 4px rgba(0,0,0,.25);
+}
+.appbar .logo{flex:none;width:30px;height:30px}
+.appbar h1{font-size:1.1rem;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appbar .version{font-size:.72rem;opacity:.75;font-weight:400;margin-left:.4rem}
+.btn-icone{
+  flex:none;width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.35rem;color:#F9FAFB;
+}
+.btn-icone:active{background:rgba(255,255,255,.15)}
+
+/* ---------- Écrans ---------- */
+.ecran{display:none;max-width:640px;margin:0 auto;padding:1rem;padding-bottom:6.5rem}
+.ecran.actif{display:block}
+
+/* ---------- Liste ---------- */
+.filtres{display:flex;gap:.5rem;margin-bottom:1rem}
+.chip{
+  padding:.55rem 1rem;border-radius:999px;font-size:.92rem;font-weight:500;
+  background:var(--carte);border:1.5px solid var(--bord);color:var(--texte-2);
+}
+.chip.actif{background:var(--anthracite);border-color:var(--anthracite);color:#fff}
+.carte-sortie{
+  background:var(--carte);border:1px solid var(--bord);border-radius:12px;
+  overflow:hidden;margin-bottom:.9rem;display:flex;align-items:stretch;
+  box-shadow:0 1px 3px rgba(31,41,55,.06);cursor:pointer;
+}
+.carte-sortie:active{background:#FAF9F6}
+.carte-vignette{
+  flex:none;width:96px;background:#ECEAE5;
+  display:flex;align-items:center;justify-content:center;color:#B8B4AC;font-size:1.6rem;
+}
+.carte-vignette img{width:100%;height:100%;object-fit:cover}
+.carte-corps{flex:1;padding:.8rem .9rem;min-width:0}
+.carte-corps h3{font-size:.98rem;font-weight:600;line-height:1.3;margin-bottom:.3rem}
+.carte-meta{font-size:.82rem;color:var(--texte-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{
+  display:inline-block;margin-top:.45rem;padding:.15rem .6rem;border-radius:999px;
+  font-size:.72rem;font-weight:600;letter-spacing:.02em;
+}
+.badge.a-faire{background:var(--ambre-clair);color:var(--ambre)}
+.badge.faite{background:#E8F5EE;color:var(--ok)}
+.vide{
+  text-align:center;color:var(--texte-2);padding:3rem 1rem;font-size:.95rem;
+}
+.bandeau-rappel{
+  background:var(--ambre-clair);border:1px solid #EAD3B5;border-radius:10px;
+  padding:.7rem .9rem;margin-bottom:1rem;font-size:.86rem;color:#7C4A0A;
+  display:flex;align-items:center;gap:.6rem;
+}
+.bandeau-rappel button{font-weight:600;color:var(--ambre);text-decoration:underline;flex:none}
+
+/* ---------- Bouton + flottant ---------- */
+.fab{
+  position:fixed;right:1.1rem;bottom:calc(1.3rem + env(safe-area-inset-bottom));z-index:15;
+  width:62px;height:62px;border-radius:50%;
+  background:var(--ambre);color:#fff;font-size:2rem;font-weight:300;
+  box-shadow:0 3px 10px rgba(180,83,9,.4);
+  display:flex;align-items:center;justify-content:center;
+}
+.fab:active{transform:scale(.95)}
+
+/* ---------- Fiche détail ---------- */
+.bandeau-titre{
+  background:var(--anthracite);color:#F9FAFB;border-radius:12px;
+  padding:1rem 1.1rem;margin-bottom:.2rem;
+}
+.bandeau-titre .numero{font-size:.75rem;opacity:.7;letter-spacing:.08em;text-transform:uppercase}
+.bandeau-titre h2{font-size:1.15rem;font-weight:600;line-height:1.35;margin-top:.15rem}
+.filet{height:3px;background:var(--ambre);border-radius:2px;margin:.7rem 0 1rem}
+.bloc{
+  background:var(--carte);border:1px solid var(--bord);border-radius:12px;
+  padding:1rem 1.1rem;margin-bottom:.9rem;
+}
+.libelle{
+  font-size:.75rem;font-weight:700;color:var(--ambre);
+  letter-spacing:.09em;text-transform:uppercase;margin-bottom:.35rem;
+}
+.info-ligne{display:flex;gap:.6rem;margin-bottom:.55rem;font-size:.95rem}
+.info-ligne:last-child{margin-bottom:0}
+.info-ligne .cle{flex:none;width:7.2rem;font-size:.78rem;font-weight:700;color:var(--ambre);letter-spacing:.06em;text-transform:uppercase;padding-top:.15rem}
+.etapes-liste{list-style:none;counter-reset:etape}
+.etapes-liste li{
+  counter-increment:etape;position:relative;padding:.3rem 0 .3rem 2.1rem;font-size:.95rem;
+}
+.etapes-liste li::before{
+  content:counter(etape);position:absolute;left:0;top:.32rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;
+  background:var(--ambre-clair);color:var(--ambre);
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;
+}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+  width:100%;padding:.95rem 1rem;border-radius:12px;
+  font-size:1rem;font-weight:600;min-height:52px;
+}
+.btn-plein{background:var(--anthracite);color:#fff}
+.btn-plein:active{background:#111827}
+.btn-ambre{background:var(--ambre);color:#fff}
+.btn-ambre:active{background:#92400E}
+.btn-clair{background:var(--carte);border:1.5px solid var(--bord);color:var(--texte)}
+.btn-clair:active{background:#F1EFEA}
+.btn-danger-clair{background:var(--carte);border:1.5px solid #F0C6C1;color:var(--danger)}
+.btn-danger-clair:active{background:#FBEEEC}
+.grille-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.grille-photos .photo,.grille-photos .ajout-photo{
+  aspect-ratio:1;border-radius:8px;overflow:hidden;position:relative;
+}
+.grille-photos .photo img{width:100%;height:100%;object-fit:cover;cursor:pointer}
+.grille-photos .ajout-photo{
+  border:2px dashed var(--bord);background:#FBFAF8;color:var(--texte-2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:.72rem;gap:.2rem;cursor:pointer;
+}
+.grille-photos .ajout-photo span{font-size:1.5rem;line-height:1;color:var(--ambre)}
+.note{
+  border-left:3px solid var(--ambre);background:#FBFAF8;border-radius:0 8px 8px 0;
+  padding:.6rem .8rem;margin-bottom:.6rem;
+}
+.note .date{font-size:.72rem;color:var(--texte-2);margin-bottom:.2rem}
+.note p{font-size:.92rem;white-space:pre-wrap}
+.note .suppr-note{float:right;color:var(--texte-2);font-size:.85rem;padding:.1rem .3rem}
+.zone-note{display:flex;gap:.5rem;margin-top:.6rem}
+.zone-note textarea{
+  flex:1;border:1.5px solid var(--bord);border-radius:10px;padding:.6rem .7rem;
+  font-size:.95rem;resize:vertical;min-height:52px;background:#fff;
+}
+.zone-note button{flex:none;align-self:flex-end;padding:.7rem 1rem;border-radius:10px;background:var(--anthracite);color:#fff;font-weight:600;min-height:52px}
+.barre-actions{
+  position:fixed;left:0;right:0;bottom:0;z-index:15;
+  background:var(--carte);border-top:1px solid var(--bord);
+  display:flex;gap:.6rem;padding:.7rem 1rem;
+  padding-bottom:calc(.7rem + env(safe-area-inset-bottom));
+  max-width:640px;margin:0 auto;
+}
+.barre-actions .btn{min-height:50px;font-size:.95rem}
+
+/* ---------- Formulaire ---------- */
+.champ{margin-bottom:1rem}
+.champ label{display:block;font-size:.8rem;font-weight:700;color:var(--ambre);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.35rem}
+.champ input[type=text],.champ textarea,.champ select{
+  width:100%;border:1.5px solid var(--bord);border-radius:10px;
+  padding:.75rem .8rem;font-size:1rem;background:#fff;
+}
+.champ input:focus,.champ textarea:focus,.champ select:focus{outline:2px solid var(--ambre);outline-offset:1px;border-color:var(--ambre)}
+.champ textarea{resize:vertical;min-height:80px}
+.champ .aide{font-size:.78rem;color:var(--texte-2);margin-top:.3rem;text-transform:none;letter-spacing:0;font-weight:400}
+.etape-edit{display:flex;gap:.4rem;margin-bottom:.5rem}
+.etape-edit input{flex:1;border:1.5px solid var(--bord);border-radius:10px;padding:.65rem .7rem;font-size:.95rem;background:#fff;min-width:0}
+.etape-edit button{
+  flex:none;width:44px;border:1.5px solid var(--bord);border-radius:10px;
+  background:#fff;color:var(--texte-2);font-size:1rem;
+}
+.etape-edit button:active{background:#F1EFEA}
+.btn-ajout-etape{
+  width:100%;padding:.65rem;border:2px dashed var(--bord);border-radius:10px;
+  color:var(--ambre);font-weight:600;font-size:.92rem;background:#FBFAF8;
+}
+
+/* ---------- Import ---------- */
+.apercu-sortie{
+  background:var(--carte);border:1px solid var(--bord);border-radius:12px;
+  padding:.9rem 1rem;margin-bottom:.9rem;
+}
+.apercu-sortie.exclu{opacity:.45}
+.apercu-entete{display:flex;align-items:flex-start;gap:.7rem;margin-bottom:.5rem}
+.apercu-entete input[type=checkbox]{width:22px;height:22px;accent-color:var(--ambre);flex:none;margin-top:.15rem}
+.apercu-entete h3{font-size:.98rem;font-weight:600;line-height:1.3}
+.apercu-detail{font-size:.85rem;color:var(--texte-2);padding-left:2rem}
+.apercu-detail b{color:var(--texte);font-weight:600}
+
+/* ---------- Superpositions ---------- */
+.voile{
+  position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:40;
+  display:none;align-items:flex-end;justify-content:center;
+}
+.voile.actif{display:flex}
+.feuille{
+  background:var(--carte);width:100%;max-width:640px;
+  border-radius:18px 18px 0 0;padding:1.2rem 1.1rem;
+  padding-bottom:calc(1.2rem + env(safe-area-inset-bottom));
+  animation:monter .18s ease-out;
+}
+@keyframes monter{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+.feuille h3{font-size:1.05rem;margin-bottom:1rem}
+.feuille .btn{margin-bottom:.6rem}
+.feuille p{font-size:.92rem;color:var(--texte-2);margin-bottom:1rem}
+.feuille .stat{font-size:.9rem;color:var(--texte);margin-bottom:.5rem;display:flex;justify-content:space-between;gap:1rem}
+.feuille .stat span:last-child{color:var(--texte-2)}
+.feuille hr{border:none;border-top:1px solid var(--bord);margin:.9rem 0}
+
+/* ---------- Visionneuse ---------- */
+.visionneuse{
+  position:fixed;inset:0;background:#0B0F16;z-index:50;display:none;
+  flex-direction:column;
+}
+.visionneuse.actif{display:flex}
+.visionneuse .haut{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:.7rem 1rem;padding-top:calc(.7rem + env(safe-area-inset-top));color:#E5E7EB;
+}
+.visionneuse .haut .compteur{font-size:.85rem;opacity:.8}
+.visionneuse .haut button{font-size:1.5rem;width:44px;height:44px;color:#E5E7EB}
+.visionneuse .image{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;position:relative}
+.visionneuse .image img{max-width:100%;max-height:100%;object-fit:contain}
+.visionneuse .nav{
+  position:absolute;top:0;bottom:0;width:30%;
+}
+.visionneuse .nav.prec{left:0}
+.visionneuse .nav.suiv{right:0}
+.visionneuse .bas{
+  padding:.8rem 1rem;padding-bottom:calc(.8rem + env(safe-area-inset-bottom));
+  display:flex;gap:.6rem;align-items:center;
+}
+.visionneuse .bas input{
+  flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);
+  border-radius:10px;padding:.65rem .8rem;color:#F3F4F6;font-size:.92rem;min-width:0;
+}
+.visionneuse .bas input::placeholder{color:rgba(255,255,255,.45)}
+.visionneuse .bas button{
+  flex:none;padding:.65rem .9rem;border-radius:10px;font-size:.9rem;font-weight:600;
+}
+.visionneuse .bas .enr{background:var(--ambre);color:#fff}
+.visionneuse .bas .sup{background:rgba(255,255,255,.12);color:#FCA5A5}
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:calc(6rem + env(safe-area-inset-bottom));transform:translateX(-50%);
+  background:var(--anthracite);color:#F9FAFB;padding:.7rem 1.2rem;border-radius:999px;
+  font-size:.9rem;z-index:60;box-shadow:0 3px 10px rgba(0,0,0,.3);
+  opacity:0;pointer-events:none;transition:opacity .25s;max-width:90vw;text-align:center;
+}
+.toast.actif{opacity:1}
+
+@media (min-width:641px){
+  .fab{right:calc(50% - 320px + 1.1rem)}
+}
+</style>
+</head>
+<body>
+
+<header class="appbar" id="appbar">
+  <svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22" fill="#111827"/><rect x="28" y="14" width="44" height="72" rx="7" fill="none" stroke="#F9FAFB" stroke-width="5"/><circle cx="50" cy="36" r="11" fill="none" stroke="#B45309" stroke-width="5"/><circle cx="50" cy="66" r="13" fill="#B45309"/><circle cx="54" cy="62" r="3.5" fill="#F9FAFB"/></svg>
+  <button class="btn-icone" id="btn-retour" style="display:none" onclick="retour()" aria-label="Retour">←</button>
+  <h1 id="titre-appbar">Repérages <span class="version" id="aff-version"></span></h1>
+  <button class="btn-icone" id="btn-reglages" onclick="ouvrirReglages()" aria-label="Réglages">⚙</button>
+</header>
+
+<!-- ================= LISTE ================= -->
+<main class="ecran actif" id="ecran-liste">
+  <div id="zone-rappel"></div>
+  <div class="filtres" role="tablist">
+    <button class="chip actif" data-filtre="toutes" onclick="changerFiltre('toutes')">Toutes</button>
+    <button class="chip" data-filtre="a_faire" onclick="changerFiltre('a_faire')">À faire</button>
+    <button class="chip" data-filtre="faite" onclick="changerFiltre('faite')">Faites</button>
+  </div>
+  <div id="liste-sorties"></div>
+</main>
+
+<!-- ================= DÉTAIL ================= -->
+<main class="ecran" id="ecran-detail"></main>
+
+<!-- ================= FORMULAIRE ================= -->
+<main class="ecran" id="ecran-form"></main>
+
+<!-- ================= IMPORT ================= -->
+<main class="ecran" id="ecran-import"></main>
+
+<button class="fab" id="fab" onclick="ouvrirMenuPlus()" aria-label="Ajouter une sortie">+</button>
+
+<!-- Feuilles (menus du bas) -->
+<div class="voile" id="voile" onclick="if(event.target===this)fermerFeuille()">
+  <div class="feuille" id="feuille"></div>
+</div>
+
+<!-- Visionneuse plein écran -->
+<div class="visionneuse" id="visionneuse">
+  <div class="haut">
+    <span class="compteur" id="vis-compteur"></span>
+    <button onclick="fermerVisionneuse()" aria-label="Fermer">✕</button>
+  </div>
+  <div class="image">
+    <img id="vis-image" alt="">
+    <div class="nav prec" onclick="visNaviguer(-1)"></div>
+    <div class="nav suiv" onclick="visNaviguer(1)"></div>
+  </div>
+  <div class="bas">
+    <input type="text" id="vis-legende" placeholder="Légende…" maxlength="120">
+    <button class="enr" onclick="enregistrerLegende()">OK</button>
+    <button class="sup" onclick="supprimerPhoto()">Suppr.</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<input type="file" id="fichier-txt" accept=".txt,text/plain" style="display:none">
+<input type="file" id="fichier-photos" accept="image/*" multiple style="display:none">
+<input type="file" id="fichier-camera" accept="image/*" capture="environment" style="display:none">
+<input type="file" id="fichier-restauration" accept=".json,application/json" style="display:none">
+
+<script>
+"use strict";
+/* =========================================================
+   Carnet de sorties photo — v1
+   Fichier unique HTML/CSS/JS — persistance IndexedDB
+   ========================================================= */
+const VERSION = "v1.5.0";
+const DATE_VERSION = "juillet 2026";
+const AUTEUR = "Michel Masquelier (michy)";
+const MAIL_AUTEUR = "michel.masquelier@gmail.com";
+const URL_KOFI = "https://ko-fi.com/michelmasquelier";
+document.getElementById("aff-version").textContent = VERSION;
+
+/* ---------- Utilitaires ---------- */
+function uuid(){ return crypto.randomUUID ? crypto.randomUUID() : Date.now()+"-"+Math.random().toString(16).slice(2); }
+function esc(s){ return String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function toast(msg, duree=2600){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("actif");
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("actif"), duree);
+}
+function dateFR(iso){
+  if(!iso) return "";
+  const d=new Date(iso);
+  return d.toLocaleDateString("fr-BE",{day:"numeric",month:"long",year:"numeric"})+" à "+
+         d.toLocaleTimeString("fr-BE",{hour:"2-digit",minute:"2-digit"});
+}
+function dateCourteFR(iso){
+  if(!iso) return "";
+  return new Date(iso).toLocaleDateString("fr-BE",{day:"numeric",month:"short",year:"numeric"});
+}
+
+/* ---------- IndexedDB ---------- */
+const NOM_DB="carnet-sorties", STORE="sorties";
+let db=null;
+function ouvrirDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(NOM_DB,1);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:"id"});
+    };
+    req.onsuccess=e=>{db=e.target.result;res(db);};
+    req.onerror=()=>rej(req.error);
+  });
+}
+function dbTous(){
+  return new Promise((res,rej)=>{
+    const req=db.transaction(STORE).objectStore(STORE).getAll();
+    req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error);
+  });
+}
+function dbLire(id){
+  return new Promise((res,rej)=>{
+    const req=db.transaction(STORE).objectStore(STORE).get(id);
+    req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error);
+  });
+}
+function dbEcrire(sortie){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(STORE,"readwrite");
+    tx.objectStore(STORE).put(sortie);
+    tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);
+  });
+}
+function dbSupprimer(id){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(STORE,"readwrite");
+    tx.objectStore(STORE).delete(id);
+    tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);
+  });
+}
+function dbVider(){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(STORE,"readwrite");
+    tx.objectStore(STORE).clear();
+    tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);
+  });
+}
+
+/* ---------- Sorties préchargées ---------- */
+const SORTIES_INITIALES=[
+ {
+  titre:"Schaerbeek → Quartier des Fleurs → Parc Josaphat",
+  numero:1, modeDeplacement:"pied",
+  appareil:"Fuji X-Pro3 + 56 mm",
+  moment:"Samedi, 7 h 00 – 9 h 30",
+  etapes:[{nom:"Place Dailly"},{nom:"Avenue Louis Bertrand"},{nom:"Rues du Quartier des Fleurs"},{nom:"Parc Josaphat"},{nom:"Étang et terrasses des cafés"}],
+  pourquoi:"Tôt le matin, promeneurs de chiens, joggeurs et cafetiers qui ouvrent, longue lumière latérale sur les façades Art nouveau.",
+  intention:"Série entière à f/2, personnes cadrées dans des éléments architecturaux (portes, arbres, abris de tram) ; pas de recadrage a posteriori, composer précisément dans le viseur.",
+  materielComplementaire:""
+ },
+ {
+  titre:"Gare du Midi → Marché des Marolles → Place du Jeu de Balle",
+  numero:2, modeDeplacement:"mixte",
+  appareil:"Nikon F2 + 50 mm (film noir et blanc si possible)",
+  moment:"Samedi, 9 h 00 – 12 h 00",
+  etapes:[{nom:"Gare du Midi"},{nom:"Les Marolles"},{nom:"Rue Haute"},{nom:"Place du Jeu de Balle"},{nom:"Palais de Justice"}],
+  pourquoi:"Mélange de brocanteurs, collectionneurs, habitants et visiteurs, scènes documentaires riches toute la matinée.",
+  intention:"Une seule image par interaction ; attendre un geste, un regard ou une pause significative avant de déclencher ; penser l'editing avant d'appuyer.",
+  materielComplementaire:""
+ },
+ {
+  titre:"Tour & Taxis → Quai des Péniches → Quartier Kanal",
+  numero:3, modeDeplacement:"mixte",
+  appareil:"Rolleiflex",
+  moment:"Dimanche, 18 h 30 jusqu'au coucher du soleil",
+  etapes:[{nom:"Tour & Taxis"},{nom:"Chemin le long du canal"},{nom:"Quai des Péniches"},{nom:"Quartier Kanal"},{nom:"Sainctelette"}],
+  pourquoi:"Lumière du soir sur l'eau et l'architecture moderne ; cyclistes, skateurs, pêcheurs et familles animent le canal.",
+  intention:"Série cohérente au format carré, échelle humaine face à la géométrie urbaine ; horizon droit ; viseur de poitrine pour un point de vue discret, moins frontal.",
+  materielComplementaire:""
+ }
+];
+function nouvelleSortie(base){
+  return Object.assign({
+    id:uuid(), titre:"", numero:0, modeDeplacement:"pied",
+    appareil:"", moment:"", etapes:[], pourquoi:"", intention:"",
+    materielComplementaire:"", statut:"a_faire", dateRealisee:null,
+    photos:[], notes:[]
+  }, base);
+}
+
+/* ---------- État et navigation ---------- */
+let filtreCourant="toutes";
+let idCourant=null;         // sortie affichée / éditée
+let pileEcrans=[];          // pour le bouton retour
+const urlsObjets=new Map(); // cache des object URLs des photos
+
+function urlPhoto(p){
+  if(!urlsObjets.has(p.id)) urlsObjets.set(p.id, URL.createObjectURL(p.blob));
+  return urlsObjets.get(p.id);
+}
+function libererUrl(idPhoto){
+  if(urlsObjets.has(idPhoto)){ URL.revokeObjectURL(urlsObjets.get(idPhoto)); urlsObjets.delete(idPhoto); }
+}
+function montrerEcran(nom, empiler=true){
+  if(empiler){
+    const actuel=document.querySelector(".ecran.actif");
+    if(actuel && actuel.id!=="ecran-"+nom) pileEcrans.push(actuel.id.replace("ecran-",""));
+  }
+  document.querySelectorAll(".ecran").forEach(e=>e.classList.remove("actif"));
+  document.getElementById("ecran-"+nom).classList.add("actif");
+  const surListe = nom==="liste";
+  document.getElementById("btn-retour").style.display = surListe? "none":"flex";
+  document.getElementById("btn-reglages").style.display = surListe? "flex":"none";
+  document.getElementById("fab").style.display = surListe? "flex":"none";
+  document.getElementById("titre-appbar").innerHTML = surListe
+    ? 'Repérages <span class="version">'+VERSION+'</span>'
+    : ({detail:"Fiche sortie", form:(idCourant?"Modifier la sortie":"Nouvelle sortie"), import:"Importer un fichier"}[nom]||"Repérages");
+  window.scrollTo(0,0);
+}
+async function retour(){
+  const prec=pileEcrans.pop()||"liste";
+  if(prec==="liste"){ idCourant=null; await afficherListe(); montrerEcran("liste", false); }
+  else if(prec==="detail" && idCourant){ await afficherDetail(idCourant); montrerEcran("detail", false); }
+  else { idCourant=null; await afficherListe(); montrerEcran("liste", false); }
+}
+
+/* ---------- Écran liste ---------- */
+const MODES_LIB={pied:"À pied", velo:"Vélo", transports:"Transports", mixte:"Mixte"};
+async function afficherListe(){
+  const sorties=(await dbTous()).sort((a,b)=>(a.numero||0)-(b.numero||0));
+  const visibles=sorties.filter(s=> filtreCourant==="toutes" || s.statut===filtreCourant);
+  const zone=document.getElementById("liste-sorties");
+  if(!visibles.length){
+    zone.innerHTML='<div class="vide">'+(sorties.length
+      ? "Aucune sortie dans ce filtre."
+      : "Aucune sortie pour le moment.<br>Touchez « + » pour en créer une ou importer un fichier .txt.")+'</div>';
+  } else {
+    zone.innerHTML=visibles.map(s=>{
+      const vignette = s.photos && s.photos.length
+        ? '<img src="'+urlPhoto(s.photos[0])+'" alt="">'
+        : '◻';
+      return '<article class="carte-sortie" onclick="voirDetail(\''+s.id+'\')">'+
+        '<div class="carte-vignette">'+vignette+'</div>'+
+        '<div class="carte-corps">'+
+          '<h3>'+esc(s.titre)+'</h3>'+
+          '<div class="carte-meta">'+esc(s.appareil)+'</div>'+
+          '<div class="carte-meta">'+esc(s.moment)+'</div>'+
+          '<span class="badge '+(s.statut==="faite"?"faite":"a-faire")+'">'+
+            (s.statut==="faite" ? "Faite"+(s.dateRealisee? " · "+dateCourteFR(s.dateRealisee):"") : "À faire")+
+          '</span>'+
+        '</div></article>';
+    }).join("");
+  }
+  afficherRappelSauvegarde(sorties.length);
+}
+function changerFiltre(f){
+  filtreCourant=f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("actif", c.dataset.filtre===f));
+  afficherListe();
+}
+
+/* ---------- Rappel de sauvegarde ---------- */
+function afficherRappelSauvegarde(nbSorties){
+  const zone=document.getElementById("zone-rappel");
+  const derniere=localStorage.getItem("derniereSauvegarde");
+  const ignoreJusque=Number(localStorage.getItem("rappelIgnoreJusque")||0);
+  const JOURS_30=30*24*3600*1000;
+  const ancienne = !derniere || (Date.now()-new Date(derniere).getTime() > JOURS_30);
+  if(nbSorties>0 && ancienne && Date.now()>ignoreJusque){
+    zone.innerHTML='<div class="bandeau-rappel"><span style="flex:1">'+
+      (derniere ? "Votre dernière sauvegarde date de plus de 30 jours." : "Aucune sauvegarde effectuée pour l'instant.")+
+      '</span><button onclick="exporterSauvegarde()">Sauvegarder</button>'+
+      '<button onclick="ignorerRappel()" aria-label="Ignorer" style="text-decoration:none">✕</button></div>';
+  } else zone.innerHTML="";
+}
+function ignorerRappel(){
+  localStorage.setItem("rappelIgnoreJusque", String(Date.now()+7*24*3600*1000));
+  document.getElementById("zone-rappel").innerHTML="";
+}
+
+/* ---------- Fiche détail ---------- */
+async function voirDetail(id){
+  idCourant=id;
+  await afficherDetail(id);
+  montrerEcran("detail");
+}
+async function afficherDetail(id){
+  const s=await dbLire(id);
+  if(!s){ toast("Sortie introuvable."); return retour(); }
+  const ecran=document.getElementById("ecran-detail");
+  const etapesHtml = s.etapes.length
+    ? '<ol class="etapes-liste">'+s.etapes.map(e=>'<li>'+esc(e.nom)+'</li>').join("")+'</ol>'
+    : '<p style="color:var(--texte-2);font-size:.92rem">Aucune étape définie.</p>';
+  const photosHtml = (s.photos||[]).map((p,i)=>
+      '<div class="photo"><img src="'+urlPhoto(p)+'" alt="'+esc(p.legende||"")+'" onclick="ouvrirVisionneuse('+i+')"></div>'
+    ).join("")+
+    '<button class="ajout-photo" onclick="ouvrirMenuPhoto()"><span>+</span>Ajouter</button>';
+  const notesHtml=(s.notes||[]).slice().sort((a,b)=>b.dateCreation.localeCompare(a.dateCreation)).map(n=>
+    '<div class="note"><button class="suppr-note" onclick="supprimerNote(\''+n.id+'\')" aria-label="Supprimer la note">✕</button>'+
+    '<div class="date">'+dateFR(n.dateCreation)+'</div><p>'+esc(n.texte)+'</p></div>').join("");
+  ecran.innerHTML=
+    '<div class="bandeau-titre"><div class="numero">Sortie '+(s.numero||"–")+'</div><h2>'+esc(s.titre)+'</h2></div>'+
+    '<div class="filet"></div>'+
+
+    '<div class="bloc">'+
+      '<div class="info-ligne"><span class="cle">Appareil</span><span>'+esc(s.appareil||"—")+'</span></div>'+
+      '<div class="info-ligne"><span class="cle">Moment idéal</span><span>'+esc(s.moment||"—")+'</span></div>'+
+      '<div class="info-ligne"><span class="cle">Déplacement</span><span>'+MODES_LIB[s.modeDeplacement]+'</span></div>'+
+      (s.materielComplementaire
+        ? '<div class="info-ligne"><span class="cle">Matériel</span><span>'+esc(s.materielComplementaire)+'</span></div>' : "")+
+      '<div class="info-ligne"><span class="cle">Statut</span><span>'+
+        (s.statut==="faite" ? "Faite"+(s.dateRealisee? " le "+dateCourteFR(s.dateRealisee):"") : "À faire")+'</span></div>'+
+    '</div>'+
+
+    '<div class="bloc"><div class="libelle">Itinéraire</div>'+etapesHtml+
+      '<div style="margin-top:.9rem"><button class="btn btn-plein" onclick="ouvrirGoogleMaps()">Ouvrir dans Google Maps</button></div>'+
+    '</div>'+
+
+    '<div class="bloc"><div class="libelle">Pourquoi maintenant</div><p style="font-size:.95rem">'+esc(s.pourquoi||"—")+'</p></div>'+
+    '<div class="bloc"><div class="libelle">Intention créative</div><p style="font-size:.95rem">'+esc(s.intention||"—")+'</p></div>'+
+
+    '<div class="bloc"><div class="libelle">Photos ('+(s.photos||[]).length+')</div><div class="grille-photos">'+photosHtml+'</div></div>'+
+
+    '<div class="bloc"><div class="libelle">Notes de terrain</div>'+
+      (notesHtml||'<p style="color:var(--texte-2);font-size:.9rem">Aucune note pour l\'instant.</p>')+
+      '<div class="zone-note"><textarea id="nouvelle-note" placeholder="Impressions, réglages, idées de retour…"></textarea>'+
+      '<button onclick="ajouterNote()">Ajouter</button></div>'+
+    '</div>'+
+
+    '<button class="btn '+(s.statut==="faite"?"btn-clair":"btn-ambre")+'" style="margin-bottom:.9rem" onclick="basculerStatut()">'+
+      (s.statut==="faite" ? "Repasser en « À faire »" : "Marquer comme faite")+'</button>'+
+
+    '<div class="barre-actions">'+
+      '<button class="btn btn-clair" onclick="ouvrirFormulaire(\''+s.id+'\')">Modifier</button>'+
+      '<button class="btn btn-clair" onclick="partagerSortie()">Partager</button>'+
+      '<button class="btn btn-danger-clair" onclick="confirmerSuppression()">Supprimer</button>'+
+    '</div>';
+}
+async function basculerStatut(){
+  const s=await dbLire(idCourant);
+  if(s.statut==="faite"){ s.statut="a_faire"; s.dateRealisee=null; }
+  else { s.statut="faite"; s.dateRealisee=new Date().toISOString(); }
+  await dbEcrire(s); await afficherDetail(idCourant);
+  toast(s.statut==="faite" ? "Sortie marquée comme faite." : "Sortie repassée en « À faire ».");
+}
+
+/* ---------- Google Maps ---------- */
+async function ouvrirGoogleMaps(){
+  const s=await dbLire(idCourant);
+  if(!s.etapes || s.etapes.length<2){ toast("Il faut au moins deux étapes pour un itinéraire."); return; }
+  if(s.modeDeplacement==="mixte"){
+    ouvrirFeuille('<h3>Itinéraire mixte — quel mode pour Google Maps ?</h3>'+
+      '<button class="btn btn-clair" onclick="lancerMaps(\'walking\')">À pied</button>'+
+      '<button class="btn btn-clair" onclick="lancerMaps(\'bicycling\')">Vélo</button>'+
+      '<button class="btn btn-clair" onclick="lancerMaps(\'transit\')">Transports en commun</button>');
+  } else {
+    lancerMaps({pied:"walking", velo:"bicycling", transports:"transit"}[s.modeDeplacement]||"walking");
+  }
+}
+async function lancerMaps(travelmode){
+  fermerFeuille();
+  const s=await dbLire(idCourant);
+  const nom=e=> (e.lat!=null && e.lng!=null) ? e.lat+","+e.lng
+    : (/bruxelles|brussel|brussels/i.test(e.nom) ? e.nom : e.nom+", Bruxelles");
+  const pts=s.etapes.map(nom);
+  const origine=pts[0], destination=pts[pts.length-1];
+  let inter=pts.slice(1,-1);
+  if(travelmode==="transit" && inter.length){
+    inter=[];
+    toast("Google Maps ignore les étapes intermédiaires en transports en commun : itinéraire départ → arrivée.");
+  } else if(inter.length>9){
+    inter=inter.slice(0,9);
+    toast("Google Maps limite à 9 étapes intermédiaires : les suivantes ont été laissées de côté.");
+  }
+  let url="https://www.google.com/maps/dir/?api=1"+
+    "&origin="+encodeURIComponent(origine)+
+    "&destination="+encodeURIComponent(destination)+
+    "&travelmode="+travelmode;
+  if(inter.length) url+="&waypoints="+inter.map(encodeURIComponent).join("%7C");
+  window.open(url,"_blank");
+}
+
+/* ---------- Photos ---------- */
+function ouvrirMenuPhoto(){
+  ouvrirFeuille('<h3>Ajouter des photos</h3>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille();document.getElementById(\'fichier-photos\').click()">Depuis la galerie</button>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille();document.getElementById(\'fichier-camera\').click()">Prendre une photo</button>');
+}
+async function compresserImage(fichier, maxDim=1600, qualite=0.85){
+  const bitmap=await createImageBitmap(fichier).catch(()=>null);
+  if(!bitmap) return fichier; // format non lisible : on garde tel quel
+  let {width:w, height:h}=bitmap;
+  if(w>maxDim || h>maxDim){
+    const r=Math.min(maxDim/w, maxDim/h);
+    w=Math.round(w*r); h=Math.round(h*r);
+  }
+  const canvas=document.createElement("canvas");
+  canvas.width=w; canvas.height=h;
+  canvas.getContext("2d").drawImage(bitmap,0,0,w,h);
+  bitmap.close && bitmap.close();
+  return new Promise(res=>canvas.toBlob(b=>res(b||fichier),"image/jpeg",qualite));
+}
+async function importerPhotos(fichiers){
+  if(!fichiers.length || !idCourant) return;
+  toast("Traitement des photos…", 6000);
+  const s=await dbLire(idCourant);
+  for(const f of fichiers){
+    const blob=await compresserImage(f);
+    s.photos.push({id:uuid(), blob, legende:"", dateAjout:new Date().toISOString()});
+  }
+  await dbEcrire(s);
+  await afficherDetail(idCourant);
+  toast(fichiers.length>1 ? fichiers.length+" photos ajoutées." : "Photo ajoutée.");
+}
+document.getElementById("fichier-photos").addEventListener("change", e=>{
+  importerPhotos([...e.target.files]); e.target.value="";
+});
+document.getElementById("fichier-camera").addEventListener("change", e=>{
+  importerPhotos([...e.target.files]); e.target.value="";
+});
+
+/* ---------- Visionneuse ---------- */
+let visIndex=0;
+async function ouvrirVisionneuse(i){
+  visIndex=i;
+  await majVisionneuse();
+  document.getElementById("visionneuse").classList.add("actif");
+}
+async function majVisionneuse(){
+  const s=await dbLire(idCourant);
+  if(!s.photos.length){ fermerVisionneuse(); return; }
+  visIndex=Math.max(0, Math.min(visIndex, s.photos.length-1));
+  const p=s.photos[visIndex];
+  document.getElementById("vis-image").src=urlPhoto(p);
+  document.getElementById("vis-legende").value=p.legende||"";
+  document.getElementById("vis-compteur").textContent=(visIndex+1)+" / "+s.photos.length+
+    (p.dateAjout? "  ·  "+dateCourteFR(p.dateAjout):"");
+}
+function visNaviguer(delta){ visIndex+=delta; majVisionneuse(); }
+function fermerVisionneuse(){ document.getElementById("visionneuse").classList.remove("actif"); }
+async function enregistrerLegende(){
+  const s=await dbLire(idCourant);
+  if(!s.photos[visIndex]) return;
+  s.photos[visIndex].legende=document.getElementById("vis-legende").value.trim();
+  await dbEcrire(s);
+  toast("Légende enregistrée.");
+}
+async function supprimerPhoto(){
+  if(!confirm("Supprimer cette photo ?")) return;
+  const s=await dbLire(idCourant);
+  const [retiree]=s.photos.splice(visIndex,1);
+  if(retiree) libererUrl(retiree.id);
+  await dbEcrire(s);
+  if(!s.photos.length) fermerVisionneuse();
+  await majVisionneuse();
+  await afficherDetail(idCourant);
+  toast("Photo supprimée.");
+}
+
+/* ---------- Notes ---------- */
+async function ajouterNote(){
+  const zone=document.getElementById("nouvelle-note");
+  const texte=zone.value.trim();
+  if(!texte) return;
+  const s=await dbLire(idCourant);
+  s.notes.push({id:uuid(), texte, dateCreation:new Date().toISOString()});
+  await dbEcrire(s);
+  await afficherDetail(idCourant);
+  toast("Note ajoutée.");
+}
+async function supprimerNote(idNote){
+  const s=await dbLire(idCourant);
+  s.notes=s.notes.filter(n=>n.id!==idNote);
+  await dbEcrire(s);
+  await afficherDetail(idCourant);
+}
+
+/* ---------- Formulaire ---------- */
+let etapesEdition=[];
+async function ouvrirFormulaire(id){
+  idCourant=id||null;
+  const s = id ? await dbLire(id) : nouvelleSortie({});
+  etapesEdition = s.etapes.map(e=>({nom:e.nom, lat:e.lat, lng:e.lng}));
+  if(!etapesEdition.length) etapesEdition.push({nom:""});
+  const ecran=document.getElementById("ecran-form");
+  ecran.innerHTML=
+    '<div class="champ"><label for="f-titre">Titre du parcours</label>'+
+      '<input type="text" id="f-titre" value="'+esc(s.titre)+'" placeholder="Quartier A → Lieu B → Point C"></div>'+
+    '<div class="champ"><label for="f-mode">Mode de déplacement</label>'+
+      '<select id="f-mode">'+
+        ["pied","velo","transports","mixte"].map(m=>'<option value="'+m+'"'+(s.modeDeplacement===m?" selected":"")+'>'+MODES_LIB[m]+'</option>').join("")+
+      '</select></div>'+
+    '<div class="champ"><label for="f-appareil">Appareil et objectif</label>'+
+      '<input type="text" id="f-appareil" value="'+esc(s.appareil)+'" placeholder="Ex. Rolleiflex, Fuji X-Pro3 + 56 mm"></div>'+
+    '<div class="champ"><label for="f-moment">Moment idéal</label>'+
+      '<input type="text" id="f-moment" value="'+esc(s.moment)+'" placeholder="Ex. Samedi, 7 h 00 – 9 h 30"></div>'+
+    '<div class="champ"><label>Étapes de l\'itinéraire</label><div id="f-etapes"></div>'+
+      '<button class="btn-ajout-etape" onclick="ajouterEtapeEdition()">+ Ajouter une étape</button>'+
+      '<div class="aide">Dans l\'ordre du parcours. Les noms de lieux suffisent (Google Maps complète « Bruxelles » automatiquement).</div></div>'+
+    '<div class="champ"><label for="f-pourquoi">Pourquoi maintenant</label>'+
+      '<textarea id="f-pourquoi" placeholder="Lumière, ambiance, événement…">'+esc(s.pourquoi)+'</textarea></div>'+
+    '<div class="champ"><label for="f-intention">Intention créative</label>'+
+      '<textarea id="f-intention" placeholder="Contrainte artistique volontaire pour la sortie">'+esc(s.intention)+'</textarea></div>'+
+    '<div class="champ"><label for="f-materiel">Matériel complémentaire <span style="color:var(--texte-2);font-weight:400;text-transform:none;letter-spacing:0">(facultatif)</span></label>'+
+      '<input type="text" id="f-materiel" value="'+esc(s.materielComplementaire||"")+'" placeholder="Films, filtres, trépied, cartes SD…"></div>'+
+    '<button class="btn btn-ambre" style="margin-top:.5rem" onclick="enregistrerFormulaire()">'+(id?"Enregistrer les modifications":"Créer la sortie")+'</button>';
+  dessinerEtapesEdition();
+  montrerEcran("form");
+}
+function dessinerEtapesEdition(){
+  const zone=document.getElementById("f-etapes");
+  zone.innerHTML=etapesEdition.map((e,i)=>
+    '<div class="etape-edit">'+
+      '<input type="text" value="'+esc(e.nom)+'" placeholder="Étape '+(i+1)+'" oninput="etapesEdition['+i+'].nom=this.value">'+
+      '<button onclick="deplacerEtape('+i+',-1)" aria-label="Monter"'+(i===0?" disabled":"")+'>↑</button>'+
+      '<button onclick="deplacerEtape('+i+',1)" aria-label="Descendre"'+(i===etapesEdition.length-1?" disabled":"")+'>↓</button>'+
+      '<button onclick="retirerEtape('+i+')" aria-label="Retirer">✕</button>'+
+    '</div>').join("");
+}
+function ajouterEtapeEdition(){ etapesEdition.push({nom:""}); dessinerEtapesEdition(); }
+function retirerEtape(i){ etapesEdition.splice(i,1); if(!etapesEdition.length) etapesEdition.push({nom:""}); dessinerEtapesEdition(); }
+function deplacerEtape(i,delta){
+  const j=i+delta;
+  if(j<0||j>=etapesEdition.length) return;
+  [etapesEdition[i],etapesEdition[j]]=[etapesEdition[j],etapesEdition[i]];
+  dessinerEtapesEdition();
+}
+async function enregistrerFormulaire(){
+  const titre=document.getElementById("f-titre").value.trim();
+  if(!titre){ toast("Le titre est obligatoire."); return; }
+  const etapes=etapesEdition.map(e=>({nom:e.nom.trim(), lat:e.lat, lng:e.lng})).filter(e=>e.nom);
+  let s;
+  if(idCourant){
+    s=await dbLire(idCourant);
+  } else {
+    const tous=await dbTous();
+    s=nouvelleSortie({numero: tous.reduce((m,x)=>Math.max(m,x.numero||0),0)+1});
+  }
+  Object.assign(s,{
+    titre,
+    modeDeplacement:document.getElementById("f-mode").value,
+    appareil:document.getElementById("f-appareil").value.trim(),
+    moment:document.getElementById("f-moment").value.trim(),
+    etapes,
+    pourquoi:document.getElementById("f-pourquoi").value.trim(),
+    intention:document.getElementById("f-intention").value.trim(),
+    materielComplementaire:document.getElementById("f-materiel").value.trim()
+  });
+  await dbEcrire(s);
+  const etaitCreation=!idCourant;
+  idCourant=s.id;
+  toast(etaitCreation? "Sortie créée." : "Modifications enregistrées.");
+  pileEcrans=["liste"];
+  await afficherDetail(s.id);
+  montrerEcran("detail", false);
+}
+
+/* ---------- Suppression ---------- */
+async function confirmerSuppression(){
+  const s=await dbLire(idCourant);
+  ouvrirFeuille('<h3>Supprimer cette sortie ?</h3>'+
+    '<p>« '+esc(s.titre)+' » sera supprimée définitivement, avec ses '+(s.photos||[]).length+' photo(s) et '+(s.notes||[]).length+' note(s). Il n\'y a pas de corbeille.</p>'+
+    '<button class="btn btn-danger-clair" onclick="supprimerSortie()">Supprimer définitivement</button>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille()">Annuler</button>');
+}
+async function supprimerSortie(){
+  fermerFeuille();
+  const s=await dbLire(idCourant);
+  (s.photos||[]).forEach(p=>libererUrl(p.id));
+  await dbSupprimer(idCourant);
+  idCourant=null; pileEcrans=[];
+  toast("Sortie supprimée.");
+  await afficherListe();
+  montrerEcran("liste", false);
+}
+
+/* ---------- Partage (.txt, champs du template uniquement) ---------- */
+const MODES_TXT={pied:"à pied", velo:"vélo", transports:"transports", mixte:"mixte"};
+async function partagerSortie(){
+  const s=await dbLire(idCourant);
+  const txt =
+    "1. "+s.titre+"\n\n"+
+    "Appareil : "+(s.appareil||"")+"\n"+
+    "Moment idéal : "+(s.moment||"")+"\n"+
+    "Parcours ("+MODES_TXT[s.modeDeplacement]+") :\n"+
+    s.etapes.map(e=>e.nom).join("\n")+"\n"+
+    "Pourquoi : "+(s.pourquoi||"")+"\n"+
+    "Intention : "+(s.intention||"")+"\n";
+  const nomFichier="sortie-"+(s.titre||"sans-titre").toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,50)+".txt";
+  const fichier=new File([txt], nomFichier, {type:"text/plain"});
+  if(navigator.canShare && navigator.canShare({files:[fichier]})){
+    try{ await navigator.share({files:[fichier], title:s.titre}); }
+    catch(e){ /* partage annulé par l'utilisateur */ }
+  } else {
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(fichier); a.download=nomFichier;
+    a.click(); URL.revokeObjectURL(a.href);
+    toast("Fichier .txt téléchargé (le partage direct n'est pas disponible ici).");
+  }
+}
+
+/* ---------- Menu « + » ---------- */
+function ouvrirMenuPlus(){
+  ouvrirFeuille('<h3>Nouvelle sortie</h3>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille();document.getElementById(\'fichier-txt\').click()">Importer un fichier .txt</button>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille();ouvrirFormulaire()">Créer à la main</button>');
+}
+
+/* ---------- Lecture du fichier .txt (FR / EN) ---------- */
+const LIBELLES=[
+  {champ:"appareil",  re:/^(appareil|camera)\s*:\s*(.*)$/i},
+  {champ:"moment",    re:/^(moment(?:\s+id[ée]al)?|best time)\s*:\s*(.*)$/i},
+  {champ:"itineraire",re:/^(parcours|itin[ée]raire|simple route|route)\s*(?:\(([^)]*)\))?\s*:\s*(.*)$/i},
+  {champ:"pourquoi",  re:/^(pourquoi(?:\s+maintenant)?|why now)\s*:\s*(.*)$/i},
+  {champ:"intention", re:/^(intention(?:\s+cr[ée]ative)?|in-camera creative intention|creative intention)\s*:\s*(.*)$/i}
+];
+function detecterMode(parenthese){
+  const p=(parenthese||"").toLowerCase();
+  if(/mixte|mixed|mix\b/.test(p)) return "mixte";
+  const trouves=[];
+  if(/pied|march|walk/.test(p)) trouves.push("pied");
+  if(/v[ée]lo|bike|cycl/.test(p)) trouves.push("velo");
+  if(/transport|public|m[ée]tro|tram|bus|transit/.test(p)) trouves.push("transports");
+  if(trouves.length===1) return trouves[0];
+  if(trouves.length>1) return "mixte";
+  return "pied";
+}
+function analyserTxt(texte){
+  const lignes=texte.replace(/\r\n?/g,"\n").split("\n");
+  const sorties=[];
+  let courante=null, champActif=null;
+  const reTitre=/^\s*(\d+)[\.\)]\s+(.+)$/;
+  for(const brute of lignes){
+    const ligne=brute.trim();
+    const mTitre=ligne.match(reTitre);
+    if(mTitre){
+      if(courante) sorties.push(courante);
+      courante={titre:mTitre[2].trim(), appareil:"", moment:"", modeDeplacement:"pied",
+                etapes:[], pourquoi:"", intention:""};
+      champActif=null;
+      continue;
+    }
+    if(!courante) continue;
+    if(!ligne){ if(champActif!=="etapes") champActif=null; continue; }
+    let reconnu=false;
+    for(const lib of LIBELLES){
+      const m=ligne.match(lib.re);
+      if(m){
+        reconnu=true;
+        if(lib.champ==="itineraire"){
+          courante.modeDeplacement=detecterMode(m[2]);
+          champActif="etapes";
+          const reste=(m[3]||"").trim();
+          if(reste) courante.etapes.push({nom:reste});
+        } else {
+          champActif=lib.champ;
+          courante[lib.champ]=(m[2]||"").trim();
+        }
+        break;
+      }
+    }
+    if(reconnu) continue;
+    if(champActif==="etapes"){
+      courante.etapes.push({nom:ligne});
+    } else if(champActif && champActif!=="etapes"){
+      courante[champActif]=(courante[champActif]+" "+ligne).trim();
+    }
+  }
+  if(courante) sorties.push(courante);
+  return sorties;
+}
+let importEnAttente=[];
+document.getElementById("fichier-txt").addEventListener("change", async e=>{
+  const f=e.target.files[0]; e.target.value="";
+  if(!f) return;
+  const texte=await f.text();
+  const trouvees=analyserTxt(texte);
+  if(!trouvees.length){
+    toast("Aucune sortie reconnue dans ce fichier. Vérifiez le format (« 1. Titre », « Appareil : »…).", 4500);
+    return;
+  }
+  importEnAttente=trouvees.map(t=>Object.assign({inclure:true}, t));
+  afficherApercuImport();
+  montrerEcran("import");
+});
+function afficherApercuImport(){
+  const ecran=document.getElementById("ecran-import");
+  ecran.innerHTML=
+    '<p style="font-size:.92rem;color:var(--texte-2);margin-bottom:1rem">'+
+      importEnAttente.length+' sortie(s) reconnue(s). Vérifiez, décochez celles à ignorer, puis validez. '+
+      'Vous pourrez tout modifier ensuite dans chaque fiche.</p>'+
+    importEnAttente.map((t,i)=>
+      '<div class="apercu-sortie'+(t.inclure?"":" exclu")+'" id="apercu-'+i+'">'+
+        '<div class="apercu-entete">'+
+          '<input type="checkbox" '+(t.inclure?"checked":"")+' onchange="importEnAttente['+i+'].inclure=this.checked;document.getElementById(\'apercu-'+i+'\').classList.toggle(\'exclu\',!this.checked)">'+
+          '<h3>'+esc(t.titre)+'</h3>'+
+        '</div>'+
+        '<div class="apercu-detail">'+
+          '<div><b>Appareil :</b> '+esc(t.appareil||"—")+'</div>'+
+          '<div><b>Moment :</b> '+esc(t.moment||"—")+'</div>'+
+          '<div><b>Mode :</b> '+MODES_LIB[t.modeDeplacement]+' · <b>Étapes :</b> '+t.etapes.length+'</div>'+
+          '<div><b>Pourquoi :</b> '+esc((t.pourquoi||"—").slice(0,90))+((t.pourquoi||"").length>90?"…":"")+'</div>'+
+          '<div><b>Intention :</b> '+esc((t.intention||"—").slice(0,90))+((t.intention||"").length>90?"…":"")+'</div>'+
+        '</div>'+
+      '</div>').join("")+
+    '<button class="btn btn-ambre" onclick="validerImport()">Importer la sélection</button>';
+}
+async function validerImport(){
+  const retenues=importEnAttente.filter(t=>t.inclure);
+  if(!retenues.length){ toast("Aucune sortie sélectionnée."); return; }
+  const tous=await dbTous();
+  let numero=tous.reduce((m,x)=>Math.max(m,x.numero||0),0);
+  for(const t of retenues){
+    numero++;
+    await dbEcrire(nouvelleSortie({
+      titre:t.titre, numero, modeDeplacement:t.modeDeplacement,
+      appareil:t.appareil, moment:t.moment, etapes:t.etapes,
+      pourquoi:t.pourquoi, intention:t.intention
+    }));
+  }
+  importEnAttente=[];
+  toast(retenues.length>1 ? retenues.length+" sorties importées." : "Sortie importée.");
+  pileEcrans=[]; idCourant=null;
+  await afficherListe();
+  montrerEcran("liste", false);
+}
+
+/* ---------- Réglages : sauvegarde, restauration, stockage ---------- */
+async function ouvrirReglages(){
+  const derniere=localStorage.getItem("derniereSauvegarde");
+  let stockage="—";
+  if(navigator.storage && navigator.storage.estimate){
+    try{
+      const est=await navigator.storage.estimate();
+      const mo=v=>(v/1048576).toFixed(1).replace(".",",")+" Mo";
+      stockage=mo(est.usage||0)+" utilisés"+(est.quota? " (sur ~"+mo(est.quota)+" disponibles)":"");
+    }catch(e){}
+  }
+  let persistant="";
+  if(navigator.storage && navigator.storage.persisted){
+    try{ persistant=(await navigator.storage.persisted()) ? "Oui" : "Non (demandé au navigateur)"; }catch(e){}
+  }
+  ouvrirFeuille('<h3>Réglages et données</h3>'+
+    '<div class="stat"><span>Version de l\'app</span><span>'+VERSION+' — '+DATE_VERSION+'</span></div>'+
+    '<div class="stat"><span>Auteur</span><span>'+AUTEUR+'</span></div>'+
+    '<div class="stat"><span>Dernière sauvegarde</span><span>'+(derniere? dateFR(derniere):"Jamais")+'</span></div>'+
+    '<div class="stat"><span>Espace utilisé</span><span>'+stockage+'</span></div>'+
+    (persistant? '<div class="stat"><span>Stockage protégé</span><span>'+persistant+'</span></div>':"")+
+    '<hr>'+
+    '<button class="btn btn-plein" onclick="ouvrirCommentaires()">Commentaires</button>'+
+    '<button class="btn btn-clair" onclick="window.open(URL_KOFI,\'_blank\')">Soutenir le projet ☕</button>'+
+    '<button class="btn btn-plein" onclick="exporterSauvegarde()">Sauvegarder tout (fichier)</button>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille();document.getElementById(\'fichier-restauration\').click()">Restaurer une sauvegarde</button>'+
+    '<p style="margin-top:.4rem">La sauvegarde est un fichier unique (sorties, photos et notes incluses) à ranger sur votre ordinateur ou votre drive. La restauration remplace tout le contenu actuel de l\'app.</p>'+
+    '<p style="margin-bottom:0;font-size:.78rem;text-align:center">© 2026 '+AUTEUR+' — Tous droits réservés.</p>');
+}
+
+/* ---------- Commentaires (ouvre l'appli mail) ---------- */
+function ouvrirCommentaires(){
+  ouvrirFeuille('<h3>Commentaires</h3>'+
+    '<p>Une remarque, une idée, un souci ? Écrivez votre message : le bouton « Envoyer » ouvrira votre application mail, il ne restera qu\'à confirmer l\'envoi.</p>'+
+    '<textarea id="texte-commentaire" style="width:100%;border:1.5px solid var(--bord);border-radius:10px;padding:.75rem .8rem;font-size:1rem;background:#fff;resize:vertical;min-height:120px;margin-bottom:.8rem" placeholder="Votre commentaire…"></textarea>'+
+    '<button class="btn btn-ambre" onclick="envoyerCommentaire()">Envoyer</button>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille()">Annuler</button>');
+}
+function envoyerCommentaire(){
+  const texte=document.getElementById("texte-commentaire").value.trim();
+  if(!texte){ toast("Écrivez d'abord votre commentaire."); return; }
+  const objet="Commentaire — Repérages "+VERSION;
+  window.location.href="mailto:"+MAIL_AUTEUR+
+    "?subject="+encodeURIComponent(objet)+
+    "&body="+encodeURIComponent(texte);
+  fermerFeuille();
+}
+function blobVersDataUrl(blob){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result); r.onerror=()=>rej(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+async function dataUrlVersBlob(dataUrl){
+  const rep=await fetch(dataUrl);
+  return rep.blob();
+}
+async function exporterSauvegarde(){
+  fermerFeuille();
+  toast("Préparation de la sauvegarde…", 8000);
+  const sorties=await dbTous();
+  const exportables=[];
+  for(const s of sorties){
+    const copie=Object.assign({}, s);
+    copie.photos=[];
+    for(const p of (s.photos||[])){
+      copie.photos.push({id:p.id, legende:p.legende||"", dateAjout:p.dateAjout,
+                         dataUrl:await blobVersDataUrl(p.blob)});
+    }
+    exportables.push(copie);
+  }
+  const contenu=JSON.stringify({app:"carnet-sorties", versionApp:VERSION, versionDonnees:1,
+                                dateExport:new Date().toISOString(), sorties:exportables});
+  const d=new Date();
+  const nom="sauvegarde-reperages-"+d.getFullYear()+"-"+
+    String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")+".json";
+  const blob=new Blob([contenu],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=nom;
+  a.click(); URL.revokeObjectURL(a.href);
+  localStorage.setItem("derniereSauvegarde", new Date().toISOString());
+  await afficherListe();
+  toast("Sauvegarde téléchargée ("+nom+").", 4000);
+}
+document.getElementById("fichier-restauration").addEventListener("change", async e=>{
+  const f=e.target.files[0]; e.target.value="";
+  if(!f) return;
+  let donnees;
+  try{ donnees=JSON.parse(await f.text()); }
+  catch(err){ toast("Ce fichier n'est pas une sauvegarde valide."); return; }
+  if(!donnees || donnees.app!=="carnet-sorties" || !Array.isArray(donnees.sorties)){
+    toast("Ce fichier n'est pas une sauvegarde du carnet."); return;
+  }
+  ouvrirFeuille('<h3>Restaurer cette sauvegarde ?</h3>'+
+    '<p>Sauvegarde du '+dateFR(donnees.dateExport)+' — '+donnees.sorties.length+' sortie(s).<br>'+
+    '<b>Attention :</b> tout le contenu actuel de l\'app sera remplacé.</p>'+
+    '<button class="btn btn-ambre" onclick="executerRestauration()">Remplacer et restaurer</button>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille();restaurationEnAttente=null">Annuler</button>');
+  window.restaurationEnAttente=donnees;
+});
+async function executerRestauration(){
+  fermerFeuille();
+  const donnees=window.restaurationEnAttente;
+  if(!donnees) return;
+  toast("Restauration en cours…", 8000);
+  urlsObjets.forEach(u=>URL.revokeObjectURL(u)); urlsObjets.clear();
+  await dbVider();
+  for(const s of donnees.sorties){
+    const copie=Object.assign(nouvelleSortie({}), s);
+    copie.photos=[];
+    for(const p of (s.photos||[])){
+      copie.photos.push({id:p.id||uuid(), legende:p.legende||"", dateAjout:p.dateAjout,
+                         blob:await dataUrlVersBlob(p.dataUrl)});
+    }
+    await dbEcrire(copie);
+  }
+  window.restaurationEnAttente=null;
+  localStorage.setItem("derniereSauvegarde", donnees.dateExport||new Date().toISOString());
+  idCourant=null; pileEcrans=[];
+  await afficherListe();
+  montrerEcran("liste", false);
+  toast("Restauration terminée : "+donnees.sorties.length+" sortie(s).", 4000);
+}
+
+/* ---------- Feuilles (menus du bas) ---------- */
+function ouvrirFeuille(html){
+  document.getElementById("feuille").innerHTML=html;
+  document.getElementById("voile").classList.add("actif");
+}
+function fermerFeuille(){
+  document.getElementById("voile").classList.remove("actif");
+}
+
+/* ---------- Démarrage ---------- */
+async function demarrer(){
+  await ouvrirDB();
+  if(navigator.storage && navigator.storage.persist){
+    navigator.storage.persist().catch(()=>{});
+  }
+  const existantes=await dbTous();
+  if(!existantes.length && !localStorage.getItem("prechargementFait")){
+    for(const base of SORTIES_INITIALES) await dbEcrire(nouvelleSortie(base));
+    localStorage.setItem("prechargementFait","1");
+  }
+  await afficherListe();
+}
+demarrer().catch(err=>{
+  console.error(err);
+  document.getElementById("liste-sorties").innerHTML=
+    '<div class="vide">Impossible d\'ouvrir la base de données locale.<br>'+
+    'Vérifiez que le navigateur autorise le stockage (mode navigation privée à éviter).</div>';
+});
+
+/* ---------- PWA : service worker et mise à jour propre ----------
+   Actif uniquement en ligne (GitHub Pages). Ouvert en fichier local,
+   l'app fonctionne comme avant, simplement sans installation PWA. */
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    // Une nouvelle version vient d'être trouvée sur le serveur.
+    reg.addEventListener("updatefound", ()=>{
+      const nouveau=reg.installing;
+      if(!nouveau) return;
+      nouveau.addEventListener("statechange", ()=>{
+        // "installed" + un SW déjà en place = mise à jour prête.
+        if(nouveau.state==="installed" && navigator.serviceWorker.controller){
+          proposerMiseAJour(reg);
+        }
+      });
+    });
+    // Vérifie aussi à chaque ouverture (le mobile garde l'app en mémoire).
+    reg.update().catch(()=>{});
+  }).catch(()=>{ /* pas bloquant : l'app fonctionne sans SW */ });
+
+  // Quand le nouveau SW prend la main, on recharge une seule fois.
+  let dejaRecharge=false;
+  navigator.serviceWorker.addEventListener("controllerchange", ()=>{
+    if(dejaRecharge) return;
+    dejaRecharge=true;
+    location.reload();
+  });
+}
+function proposerMiseAJour(reg){
+  if(document.getElementById("bandeau-maj")) return;
+  const b=document.createElement("div");
+  b.id="bandeau-maj";
+  b.style.cssText="position:fixed;left:50%;transform:translateX(-50%);"+
+    "bottom:calc(6rem + env(safe-area-inset-bottom));z-index:60;"+
+    "background:var(--anthracite);color:#F9FAFB;border-radius:999px;"+
+    "padding:.6rem .7rem .6rem 1.1rem;display:flex;align-items:center;gap:.8rem;"+
+    "box-shadow:0 3px 10px rgba(0,0,0,.3);font-size:.9rem;max-width:92vw";
+  b.innerHTML='<span>Nouvelle version disponible</span>'+
+    '<button id="btn-maj" style="background:var(--ambre);color:#fff;font-weight:600;'+
+    'border-radius:999px;padding:.45rem .9rem">Recharger</button>';
+  document.body.appendChild(b);
+  document.getElementById("btn-maj").onclick=()=>{
+    if(reg.waiting) reg.waiting.postMessage({type:"SKIP_WAITING"});
+    b.remove();
+  };
+}
+</script>
+</body>
+</html>
