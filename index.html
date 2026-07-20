@@ -350,7 +350,7 @@ img{display:block;max-width:100%}
    Carnet de sorties photo — v1
    Fichier unique HTML/CSS/JS — persistance IndexedDB
    ========================================================= */
-const VERSION = "v1.5.0";
+const VERSION = "v1.7.0";
 const DATE_VERSION = "juillet 2026";
 const AUTEUR = "Michel Masquelier (michy)";
 const MAIL_AUTEUR = "michel.masquelier@gmail.com";
@@ -591,7 +591,12 @@ async function afficherDetail(id){
     '</div>'+
 
     '<div class="bloc"><div class="libelle">Itinéraire</div>'+etapesHtml+
-      '<div style="margin-top:.9rem"><button class="btn btn-plein" onclick="ouvrirGoogleMaps()">Ouvrir dans Google Maps</button></div>'+
+      '<div style="margin-top:.9rem">'+
+        '<button class="btn btn-clair" style="margin-bottom:.5rem" onclick="allerAuDepart()">Aller au point de départ'+
+          '<span style="display:block;font-size:.8rem;font-weight:400;color:var(--texte-2)">'+
+            esc((s.etapes&&s.etapes[0]) ? s.etapes[0].nom : "—")+'</span></button>'+
+        '<button class="btn btn-plein" onclick="ouvrirParcours()">Ouvrir le parcours dans Google Maps</button>'+
+      '</div>'+
     '</div>'+
 
     '<div class="bloc"><div class="libelle">Pourquoi maintenant</div><p style="font-size:.95rem">'+esc(s.pourquoi||"—")+'</p></div>'+
@@ -622,40 +627,71 @@ async function basculerStatut(){
   toast(s.statut==="faite" ? "Sortie marquée comme faite." : "Sortie repassée en « À faire ».");
 }
 
-/* ---------- Google Maps ---------- */
-async function ouvrirGoogleMaps(){
-  const s=await dbLire(idCourant);
-  if(!s.etapes || s.etapes.length<2){ toast("Il faut au moins deux étapes pour un itinéraire."); return; }
-  if(s.modeDeplacement==="mixte"){
-    ouvrirFeuille('<h3>Itinéraire mixte — quel mode pour Google Maps ?</h3>'+
-      '<button class="btn btn-clair" onclick="lancerMaps(\'walking\')">À pied</button>'+
-      '<button class="btn btn-clair" onclick="lancerMaps(\'bicycling\')">Vélo</button>'+
-      '<button class="btn btn-clair" onclick="lancerMaps(\'transit\')">Transports en commun</button>');
-  } else {
-    lancerMaps({pied:"walking", velo:"bicycling", transports:"transit"}[s.modeDeplacement]||"walking");
-  }
+/* ---------- Google Maps ----------
+   Deux actions volontairement séparées :
+   1) l'approche  : ma position → 1re étape, avec SON propre mode ;
+   2) le parcours : 1re étape → … → dernière étape, avec le mode de la sortie.
+   Google Maps n'accepte qu'un seul mode par itinéraire : les séparer permet
+   d'aller au point de départ en transports puis de marcher le parcours.       */
+
+function pointMaps(e){
+  return (e.lat!=null && e.lng!=null) ? e.lat+","+e.lng
+    : (/bruxelles|brussel|brussels/i.test(e.nom) ? e.nom : e.nom+", Bruxelles");
 }
-async function lancerMaps(travelmode){
+function urlMaps({origine=null, destination, inter=[], travelmode}){
+  let url="https://www.google.com/maps/dir/?api=1"+
+    "&destination="+encodeURIComponent(destination)+
+    "&travelmode="+travelmode;
+  if(origine) url+="&origin="+encodeURIComponent(origine);
+  if(inter.length) url+="&waypoints="+inter.map(encodeURIComponent).join("%7C");
+  window.open(url,"_blank");
+}
+
+/* --- 1) Aller au point de départ --- */
+async function allerAuDepart(){
+  const s=await dbLire(idCourant);
+  if(!s.etapes || !s.etapes.length){ toast("Aucune étape enregistrée pour cette sortie."); return; }
+  ouvrirFeuille('<h3>Comment vous rendez-vous au départ ?</h3>'+
+    '<p style="font-size:.85rem;color:var(--texte-2);margin:-.3rem 0 .8rem">Destination : '+esc(s.etapes[0].nom)+'</p>'+
+    '<button class="btn btn-clair" onclick="lancerApproche(\'transit\')">Transports en commun</button>'+
+    '<button class="btn btn-clair" onclick="lancerApproche(\'driving\')">Voiture</button>'+
+    '<button class="btn btn-clair" onclick="lancerApproche(\'bicycling\')">Vélo</button>'+
+    '<button class="btn btn-clair" onclick="lancerApproche(\'walking\')">À pied</button>');
+}
+async function lancerApproche(travelmode){
   fermerFeuille();
   const s=await dbLire(idCourant);
-  const nom=e=> (e.lat!=null && e.lng!=null) ? e.lat+","+e.lng
-    : (/bruxelles|brussel|brussels/i.test(e.nom) ? e.nom : e.nom+", Bruxelles");
-  const pts=s.etapes.map(nom);
+  // pas de paramètre origin → Google Maps part de la position GPS du téléphone
+  urlMaps({destination:pointMaps(s.etapes[0]), travelmode});
+}
+
+/* --- 2) Ouvrir le parcours --- */
+async function ouvrirParcours(){
+  const s=await dbLire(idCourant);
+  if(!s.etapes || s.etapes.length<2){ toast("Il faut au moins deux étapes pour un parcours."); return; }
+  if(s.modeDeplacement==="mixte"){
+    ouvrirFeuille('<h3>Parcours mixte — quel mode pour Google Maps ?</h3>'+
+      '<button class="btn btn-clair" onclick="lancerParcours(\'walking\')">À pied</button>'+
+      '<button class="btn btn-clair" onclick="lancerParcours(\'bicycling\')">Vélo</button>'+
+      '<button class="btn btn-clair" onclick="lancerParcours(\'transit\')">Transports en commun</button>');
+  } else {
+    lancerParcours({pied:"walking", velo:"bicycling", transports:"transit"}[s.modeDeplacement]||"walking");
+  }
+}
+async function lancerParcours(travelmode){
+  fermerFeuille();
+  const s=await dbLire(idCourant);
+  const pts=s.etapes.map(pointMaps);
   const origine=pts[0], destination=pts[pts.length-1];
   let inter=pts.slice(1,-1);
   if(travelmode==="transit" && inter.length){
     inter=[];
-    toast("Google Maps ignore les étapes intermédiaires en transports en commun : itinéraire départ → arrivée.");
+    toast("Google Maps ignore les étapes intermédiaires en transports en commun : itinéraire direct vers "+s.etapes[s.etapes.length-1].nom+".");
   } else if(inter.length>9){
     inter=inter.slice(0,9);
     toast("Google Maps limite à 9 étapes intermédiaires : les suivantes ont été laissées de côté.");
   }
-  let url="https://www.google.com/maps/dir/?api=1"+
-    "&origin="+encodeURIComponent(origine)+
-    "&destination="+encodeURIComponent(destination)+
-    "&travelmode="+travelmode;
-  if(inter.length) url+="&waypoints="+inter.map(encodeURIComponent).join("%7C");
-  window.open(url,"_blank");
+  urlMaps({origine, destination, inter, travelmode});
 }
 
 /* ---------- Photos ---------- */
