@@ -10,7 +10,7 @@
    force le rechargement des fichiers.
    ============================================================ */
 
-const APP_VERSION = "1.8.7";
+const APP_VERSION = "1.8.8";
 const CACHE_NAME = "reperages-v" + APP_VERSION;
 
 // Fichiers constituant la « coquille » de l'app (les données,
@@ -24,10 +24,20 @@ const APP_SHELL = [
   "./icon-maskable-512.png"
 ];
 
-// Installation : on met la coquille en cache.
+/* Installation : on met la coquille en cache.
+
+   `cache: "reload"` est ici la pièce maîtresse. Sans lui, ces
+   fichiers sont pris dans le cache HTTP du navigateur, qui peut
+   encore détenir la version précédente : le nouveau service
+   worker enfermerait alors un ancien index.html dans un cache
+   portant le nouveau numéro, et l'app resterait indéfiniment sur
+   la version d'avant tout en annonçant une mise à jour réussie.
+   Avec ce réglage, chaque fichier est réclamé au serveur.        */
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(APP_SHELL.map((chemin) => new Request(chemin, { cache: "reload" })))
+    )
   );
 });
 
@@ -52,24 +62,49 @@ self.addEventListener("message", (event) => {
   }
 });
 
-// Stratégie de réponse : cache d'abord (rapidité + hors ligne),
-// réseau en secours. Uniquement pour les fichiers de l'app.
+/* Stratégie de réponse, en deux régimes.
+
+   1. La page elle-même (requête de navigation) : réseau d'abord,
+      cache en secours. C'est le fichier qui porte toute l'app ;
+      mieux vaut attendre quelques dixièmes de seconde que servir
+      une version périmée. Hors connexion, le cache prend le
+      relais et l'app s'ouvre normalement.
+   2. Le reste (icônes, manifeste) : cache d'abord, réseau en
+      secours. Ces fichiers ne changent presque jamais et gagnent
+      à être instantanés.                                          */
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.origin !== self.location.origin) {
     return; // on ne touche pas aux requêtes externes (ex. Google Maps)
   }
-  event.respondWith(
-    caches.match(event.request, { ignoreSearch: true }).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request).then((response) => {
-          // Petite mise en cache opportuniste des fichiers de l'app.
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, copy));
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((reponse) => {
+          if (reponse.ok) {
+            const copie = reponse.clone();
+            caches.open(CACHE_NAME).then((c) => c.put("./index.html", copie));
           }
-          return response;
+          return reponse;
+        })
+        .catch(() =>
+          caches.match("./index.html").then((cache) => cache || caches.match("./"))
+        )
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request, { ignoreSearch: true }).then((cache) => {
+      return (
+        cache ||
+        fetch(event.request).then((reponse) => {
+          if (reponse.ok) {
+            const copie = reponse.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, copie));
+          }
+          return reponse;
         })
       );
     })
