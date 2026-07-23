@@ -66,6 +66,12 @@ img{display:block;max-width:100%}
   background:var(--carte);border:1.5px solid var(--bord);color:var(--texte-2);
 }
 .chip.actif{background:var(--anthracite);border-color:var(--anthracite);color:#fff}
+/* E5 — le filtre étoile est un second axe : décalé et de couleur distincte */
+.chip-etoile{
+  margin-left:auto;padding:.5rem .7rem;display:flex;align-items:center;justify-content:center;
+  color:#B8B4AC;
+}
+.chip-etoile.actif{background:var(--ambre);border-color:var(--ambre);color:#fff}
 .carte-sortie{
   background:var(--carte);border:1px solid var(--bord);border-radius:12px;
   overflow:hidden;margin-bottom:.9rem;display:flex;align-items:stretch;
@@ -77,6 +83,21 @@ img{display:block;max-width:100%}
   display:flex;align-items:center;justify-content:center;color:#B8B4AC;font-size:1.6rem;
 }
 .carte-vignette img{width:100%;height:100%;object-fit:cover}
+/* E7 — numéro de sortie en guise de vignette quand il n'y a pas de photo */
+.carte-vignette .num{
+  font-size:2rem;font-weight:600;color:var(--anthracite);letter-spacing:.01em;
+  line-height:1;text-align:center;
+}
+.carte-vignette .num small{display:block;font-size:.6rem;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:#A9A49B;margin-bottom:.22rem}
+/* E5 — étoile sur la carte de liste */
+.carte-etoile{
+  flex:none;width:46px;align-self:stretch;background:none;border:none;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  color:#CFCBC3;cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.carte-etoile.on{color:var(--ambre)}
+.carte-etoile:active{background:#F3F1EC}
 .carte-corps{flex:1;padding:.8rem .9rem;min-width:0}
 .carte-corps h3{font-size:.98rem;font-weight:600;line-height:1.3;margin-bottom:.3rem}
 .carte-meta{font-size:.82rem;color:var(--texte-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -109,7 +130,36 @@ img{display:block;max-width:100%}
 /* ---------- Fiche détail ---------- */
 .bandeau-titre{
   background:var(--anthracite);color:#F9FAFB;border-radius:12px;
-  padding:1rem 1.1rem;margin-bottom:.2rem;
+  padding:1rem 1.1rem;margin-bottom:.2rem;position:relative;
+}
+/* E5 — étoile dans l'en-tête de la fiche */
+.etoile-titre{
+  position:absolute;top:.5rem;right:.5rem;width:44px;height:44px;
+  background:none;border:none;padding:0;display:flex;align-items:center;justify-content:center;
+  color:rgba(249,250,251,.45);cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.etoile-titre.on{color:#F0A24B}
+/* E7 — icône « information sur le parcours », à gauche de l'étoile.
+   Toujours présente : discrète quand il n'y a rien à lire, ambre sinon. */
+.info-titre{
+  position:absolute;top:.5rem;right:3.25rem;width:44px;height:44px;
+  background:none;border:none;padding:0;display:flex;align-items:center;justify-content:center;
+  color:rgba(249,250,251,.28);cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.info-titre.dispo{color:#F0A24B}
+/* Un SVG au centre vide (fill="none") n'est cliquable que sur ses traits :
+   le disque du ⓘ et l'intérieur de l'étoile creuse ne recevaient rien. On
+   neutralise le dessin pour que le clic atteigne toujours le bouton, qui
+   fait bien ses 44 px. Le z-index et touch-action sont là par précaution :
+   plus rien ne peut passer devant, et le tactile ne perd pas de temps à
+   guetter un double-appui avant de réagir. */
+.etoile-titre,.info-titre{z-index:2;touch-action:manipulation;border-radius:50%}
+.etoile-titre svg,.info-titre svg{pointer-events:none}
+/* Retour visuel : la zone réellement sensible devient visible, ce qui lève
+   le doute au lieu de le laisser deviner. */
+.etoile-titre:active,.info-titre:active{background:rgba(255,255,255,.20)}
+@media (hover:hover){
+  .etoile-titre:hover,.info-titre:hover{background:rgba(255,255,255,.12)}
 }
 .bandeau-titre .numero{font-size:.75rem;opacity:.7;letter-spacing:.08em;text-transform:uppercase}
 .bandeau-titre h2{font-size:1.15rem;font-weight:600;line-height:1.35;margin-top:.15rem}
@@ -234,6 +284,14 @@ img{display:block;max-width:100%}
 .feuille .stat{font-size:.9rem;color:var(--texte);margin-bottom:.5rem;display:flex;justify-content:space-between;gap:1rem}
 .feuille .stat span:last-child{color:var(--texte-2)}
 .feuille hr{border:none;border-top:1px solid var(--bord);margin:.9rem 0}
+/* Un texte informatif peut être long : la feuille défile plutôt que de
+   déborder de l'écran, et le bouton de fermeture reste atteignable. */
+.feuille{max-height:82vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.texte-info p{
+  font-size:.95rem;color:var(--texte);margin-bottom:.75rem;text-align:left;
+}
+.texte-info p:last-child{margin-bottom:1rem}
+.texte-info.vide p{color:var(--texte-2);font-style:italic}
 
 /* ---------- Visionneuse ---------- */
 .visionneuse{
@@ -299,6 +357,8 @@ img{display:block;max-width:100%}
     <button class="chip actif" data-filtre="toutes" onclick="changerFiltre('toutes')">Toutes</button>
     <button class="chip" data-filtre="a_faire" onclick="changerFiltre('a_faire')">À faire</button>
     <button class="chip" data-filtre="faite" onclick="changerFiltre('faite')">Faites</button>
+    <button class="chip chip-etoile" data-filtre="etoile" onclick="changerFiltre('etoile')"
+            aria-label="Sorties étoilées" title="Sorties étoilées"></button>
   </div>
   <div id="liste-sorties"></div>
 </main>
@@ -350,7 +410,7 @@ img{display:block;max-width:100%}
    Carnet de sorties photo — v1
    Fichier unique HTML/CSS/JS — persistance IndexedDB
    ========================================================= */
-const VERSION = "v1.7.0";
+const VERSION = "v1.8.5";
 const DATE_VERSION = "juillet 2026";
 const AUTEUR = "Michel Masquelier (michy)";
 const MAIL_AUTEUR = "michel.masquelier@gmail.com";
@@ -427,43 +487,204 @@ function dbVider(){
 /* ---------- Sorties préchargées ---------- */
 const SORTIES_INITIALES=[
  {
-  titre:"Schaerbeek → Quartier des Fleurs → Parc Josaphat",
+  titre:"Schaerbeek, de l'avenue Louis Bertrand au Quartier des Fleurs (4 km)",
+  idParcours:"rpg-bxl-josaphat",
   numero:1, modeDeplacement:"pied",
-  appareil:"Fuji X-Pro3 + 56 mm",
-  moment:"Samedi, 7 h 00 – 9 h 30",
-  etapes:[{nom:"Place Dailly"},{nom:"Avenue Louis Bertrand"},{nom:"Rues du Quartier des Fleurs"},{nom:"Parc Josaphat"},{nom:"Étang et terrasses des cafés"}],
-  pourquoi:"Tôt le matin, promeneurs de chiens, joggeurs et cafetiers qui ouvrent, longue lumière latérale sur les façades Art nouveau.",
-  intention:"Série entière à f/2, personnes cadrées dans des éléments architecturaux (portes, arbres, abris de tram) ; pas de recadrage a posteriori, composer précisément dans le viseur.",
+  appareil:"un appareil digital et un objectif normal ou un petit grand angle, pourquoi pas un Fuji X100 ou simplement son smartphone en mode photo (sans filtre).",
+  moment:"Samedi, 7 h 00 - 9 h 30 au printemps ou en été pour avoir une belle lumière, un peu plus tard en hiver.",
+  etapes:[{nom:"Avenue Louis Bertrand"},{nom:"Boulevard Lambermont"},{nom:"Rue des Mimosas"},{nom:"Avenue Général Eisenhower"},{nom:"Parc Josaphat"},{nom:"Église Saint-Servais"}],
+  pourquoi:"Tôt le matin, promeneurs de chiens, joggeurs et cafetiers qui ouvrent, longue lumière latérale sur les façades Art nouveau, le parc Josaphat presque vide.",
+  intention:"Série entière cadrée dans des éléments architecturaux (portes, arbres, abris de tram) alternant avec des plans larges des rues ou avenues ; détail dans le parc qui rappelle un élément d'architecture ; pas de recadrage a posteriori, composer précisément dans le viseur, toujours en orientation paysage.",
+  infoParcours:"Ce parcours séduit par son équilibre entre nature, patrimoine et qualité de vie. L'élégante avenue Louis Bertrand, bordée de remarquables façades Art nouveau et éclectiques, relie l'Église St-Servais au boulevard Lambermont. À quelques pas, le quartier des Fleurs, avec ses rues aux noms floraux et son ambiance résidentielle paisible, offre un cadre verdoyant particulièrement apprécié des promeneurs et des amateurs d'architecture. L'ensemble constitue l'un des secteurs les plus emblématiques et les plus recherchés de Schaerbeek. Le parc Josaphat est un poumon de 20 hectares niché au cœur de Schaerbeek.",
   materielComplementaire:""
  },
  {
-  titre:"Gare du Midi → Marché des Marolles → Place du Jeu de Balle",
-  numero:2, modeDeplacement:"mixte",
-  appareil:"Nikon F2 + 50 mm (film noir et blanc si possible)",
-  moment:"Samedi, 9 h 00 – 12 h 00",
-  etapes:[{nom:"Gare du Midi"},{nom:"Les Marolles"},{nom:"Rue Haute"},{nom:"Place du Jeu de Balle"},{nom:"Palais de Justice"}],
-  pourquoi:"Mélange de brocanteurs, collectionneurs, habitants et visiteurs, scènes documentaires riches toute la matinée.",
-  intention:"Une seule image par interaction ; attendre un geste, un regard ou une pause significative avant de déclencher ; penser l'editing avant d'appuyer.",
+  titre:"Hôpital St-Pierre, les Marolles, le Palais de Justice (3,7 km)",
+  idParcours:"rpg-bxl-marolles",
+  numero:2, modeDeplacement:"pied",
+  appareil:"Reflex argentique et un film noir et blanc, sinon au smartphone et passer en noir et blanc ensuite.",
+  moment:"week-end, 9 h 00 – 12 h 00",
+  etapes:[{nom:"Hôpital St-Pierre"},{nom:"Cité Hellemans"},{nom:"Place du jeu de balle"},{nom:"Place de la Chapelle"},{nom:"Ascenseur des Marolles"},{nom:"Place Poelaert"}],
+  pourquoi:"Mélange de brocanteurs, collectionneurs, habitants, visiteurs et touristes, scènes documentaires riches toute la matinée.",
+  intention:"Une seule image par interaction ; attendre un geste, un regard ou une pause significative avant de déclencher ; penser l'editing avant d'appuyer, soigner sa composition.",
+  infoParcours:"Les Marolles incarnent l'âme populaire et authentique de Bruxelles. Chaque matin, la place du Jeu de Balle accueille le plus célèbre marché aux puces de Belgique, où chineurs et curieux viennent dénicher meubles, objets anciens et trésors insolites. Dominant le quartier, l'imposant Palais de Justice offre l'un des plus beaux panoramas sur la capitale. Le Palais de Justice est plus grand que la Basilique St-Pierre de Rome.",
   materielComplementaire:""
  },
  {
-  titre:"Tour & Taxis → Quai des Péniches → Quartier Kanal",
-  numero:3, modeDeplacement:"mixte",
-  appareil:"Rolleiflex",
-  moment:"Dimanche, 18 h 30 jusqu'au coucher du soleil",
-  etapes:[{nom:"Tour & Taxis"},{nom:"Chemin le long du canal"},{nom:"Quai des Péniches"},{nom:"Quartier Kanal"},{nom:"Sainctelette"}],
+  titre:"Tour & Taxis, Quartier Kanal (3,5 km)",
+  idParcours:"rpg-bxl-kanal",
+  numero:3, modeDeplacement:"pied",
+  appareil:"Rolleiflex, TLR ou simplement travailler avec la contrainte du format carré. Donc même au smartphone mais on recadre en carré.",
+  moment:"peu importe le jour mais on privilégie la fin de journée, pour avoir des couleurs saturées et de longues ombres.",
+  etapes:[{nom:"Place Sainctelette"},{nom:"Parc Béco"},{nom:"La gare Maritime"},{nom:"Parc de Tour et Taxis"},{nom:"Pont Suzan Daniel"},{nom:"Ferme des Boues"},{nom:"Kanal - Centre Pompidou"}],
   pourquoi:"Lumière du soir sur l'eau et l'architecture moderne ; cyclistes, skateurs, pêcheurs et familles animent le canal.",
   intention:"Série cohérente au format carré, échelle humaine face à la géométrie urbaine ; horizon droit ; viseur de poitrine pour un point de vue discret, moins frontal.",
+  infoParcours:"Le quartier de Tour & Taxis est l'un des plus grands projets de reconversion urbaine de Bruxelles, transformant un ancien site industriel et logistique en un espace mêlant patrimoine, parcs, logements, bureaux et lieux culturels. À proximité, le futur KANAL – Centre Pompidou, installé dans l'ancien garage Citroën, deviendra l'un des plus importants musées d'art moderne et contemporain d'Europe (ouverture prévue en novembre 2026).",
   materielComplementaire:""
  }
 ];
 function nouvelleSortie(base){
   return Object.assign({
-    id:uuid(), titre:"", numero:0, modeDeplacement:"pied",
+    id:uuid(),                    // identité locale, propre à ce téléphone
+    idParcours:nouvelIdParcours(),// E6 — identité du parcours, voyage avec le .txt
+    titre:"", numero:0, modeDeplacement:"pied",
     appareil:"", moment:"", etapes:[], pourquoi:"", intention:"",
+    infoParcours:"",              // E7 — texte documentaire, non éditable ici
     materielComplementaire:"", statut:"a_faire", dateRealisee:null,
+    etoile:false,                 // E5 — marqueur permanent, indépendant du statut
     photos:[], notes:[]
   }, base);
+}
+
+/* ---------- E6 : identifiant de parcours ----------
+   Distinct de `id` : `id` identifie la fiche sur CE téléphone, `idParcours`
+   identifie le parcours lui-même et reste le même chez tous ceux qui l'ont
+   importé. C'est ce qui permettra de regrouper les visites d'un même parcours
+   (E3, la collection), même si le titre a été modifié entre-temps.
+   Les trois sorties préchargées portent un identifiant écrit en dur : sans
+   cela, chaque téléphone en fabriquerait un différent et le regroupement
+   serait impossible précisément là où il compte le plus.                     */
+/* Titres des trois parcours tels qu'ils étaient livrés jusqu'en v1.8.2,
+   réduits à leurs lettres. Sert à les retrouver après leur réécriture.       */
+const TITRES_HISTORIQUES={
+  "schaerbeekquartierdesfleursparcjosaphat":"rpg-bxl-josaphat",
+  "garedumidimarchedesmarollesplacedujeudeballe":"rpg-bxl-marolles",
+  "tourtaxisquaidespenichesquartierkanal":"rpg-bxl-kanal"
+};
+function nouvelIdParcours(){
+  return "rpg-"+uuid().replace(/-/g,"").slice(0,12);
+}
+function normaliserTitre(t){
+  return String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"");
+}
+/* Rattrapage au démarrage : les sorties créées avant la v1.8 n'ont ni
+   identifiant de parcours ni champ étoile. On leur en attribue un, en
+   reconnaissant au passage les trois sorties préchargées à leur titre pour
+   qu'elles récupèrent bien l'identifiant commun.                             */
+async function migrerV18(){
+  const tous=await dbTous();
+  const refs=new Map(SORTIES_INITIALES.map(b=>[normaliserTitre(b.titre), b.idParcours]));
+  /* Les trois parcours livrés ont été réécrits en v1.8.3 : leur titre actuel
+     ne ressemble plus à celui qu'ont les téléphones installés avant. Sans
+     cette table, une fiche venue de la v1.7 recevrait un identifiant neuf et
+     ne serait plus reconnue comme l'un des parcours de référence — ni ici,
+     ni par la mise à jour des textes qui suit. */
+  for(const [ancien,id] of Object.entries(TITRES_HISTORIQUES)) refs.set(ancien,id);
+  for(const s of tous){
+    let modifiee=false;
+    if(!s.idParcours){
+      s.idParcours = refs.get(normaliserTitre(s.titre)) || nouvelIdParcours();
+      modifiee=true;
+    }
+    if(typeof s.etoile!=="boolean"){ s.etoile=false; modifiee=true; }
+    if(modifiee) await dbEcrire(s);
+  }
+}
+
+/* ---------- Migration v1.8.3 : les trois parcours de référence ----------
+   Les sorties préchargées ont été réécrites (titres, étapes et textes revus,
+   texte informatif ajouté). Le préchargement n'ayant lieu qu'à la toute
+   première ouverture, les téléphones déjà installés gardent l'ancienne
+   version : il faut donc les mettre à jour ici.
+
+   Règle prudente, en deux temps :
+   1. si la fiche est restée telle qu'elle a été livrée (on le vérifie sur son
+      titre ET son intention, réduits à leurs lettres), personne n'y a touché :
+      on remplace le descriptif par la nouvelle version ;
+   2. si elle a été retouchée, on n'écrase rien — on se contente d'ajouter le
+      texte informatif, qui manquait de toute façon.
+   Dans les deux cas, photos, notes, statut, étoile, matériel et numéro sont
+   conservés : rien de ce que l'utilisateur a produit n'est perdu.
+   La fonction se désamorce d'elle-même : après passage, l'empreinte ne
+   correspond plus.                                                            */
+const EMPREINTES_V182={
+  "rpg-bxl-josaphat":"schaerbeekquartierdesfleursparcjosaphat|serieentiereaf2personnescadreesdansdeselementsarchitecturauxportesarbresabrisdetrampasderecadrageaposterioricomposerprecisementdansleviseur",
+  "rpg-bxl-marolles":"garedumidimarchedesmarollesplacedujeudeballe|uneseuleimageparinteractionattendreungesteunregardouunepausesignificativeavantdedeclencherpenserleditingavantdappuyer",
+  "rpg-bxl-kanal":"tourtaxisquaidespenichesquartierkanal|seriecoherenteauformatcarreechellehumainefacealageometrieurbainehorizondroitviseurdepoitrinepourunpointdevuediscretmoinsfrontal"
+};
+async function migrerV183(){
+  const nouveaux=new Map(SORTIES_INITIALES.map(b=>[b.idParcours,b]));
+  const tous=await dbTous();
+  for(const s of tous){
+    const neuf=nouveaux.get(s.idParcours);
+    if(!neuf) continue;                       // parcours personnel : on ne touche à rien
+    const empreinte=normaliserTitre(s.titre)+"|"+normaliserTitre(s.intention);
+    const intacte = empreinte===EMPREINTES_V182[s.idParcours];
+    if(intacte){
+      Object.assign(s,{
+        titre:neuf.titre, modeDeplacement:neuf.modeDeplacement,
+        appareil:neuf.appareil, moment:neuf.moment,
+        etapes:neuf.etapes.map(e=>({nom:e.nom})),
+        pourquoi:neuf.pourquoi, intention:neuf.intention,
+        infoParcours:neuf.infoParcours
+      });
+      await dbEcrire(s);
+    } else if(!(s.infoParcours||"").trim()){
+      s.infoParcours=neuf.infoParcours;
+      await dbEcrire(s);
+    }
+  }
+}
+
+/* ---------- E5 : étoile ----------
+   Dessinée en SVG plutôt qu'avec un caractère : un glyphe absent de la police
+   du téléphone s'afficherait en carré vide, ce qui donnerait exactement
+   l'impression de rendu cassé que E7 cherche à supprimer.                    */
+function svgEtoile(pleine){
+  return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" '+
+    'fill="'+(pleine?"currentColor":"none")+'" stroke="currentColor" stroke-width="1.7" '+
+    'stroke-linejoin="round">'+
+    '<rect x="0" y="0" width="24" height="24" fill="transparent" stroke="none"/>'+
+    '<path d="M12 3.5l2.7 5.45 6.02.88-4.36 4.25 1.03 5.99L12 17.2'+
+    'l-5.39 2.87 1.03-5.99L3.28 9.83l6.02-.88z"/></svg>';
+}
+async function basculerEtoile(id, ev, source){
+  if(ev) ev.stopPropagation();   // sans ceci, marquer une sortie l'ouvrirait aussitôt
+  const s=await dbLire(id);
+  if(!s) return;
+  s.etoile=!s.etoile;
+  await dbEcrire(s);
+  if(source==="detail") await afficherDetail(id); else await afficherListe();
+  toast(s.etoile ? "Sortie étoilée." : "Étoile retirée.");
+}
+
+/* ---------- E7 : information sur le parcours ----------
+   Texte documentaire (histoire du quartier, monument, personnalité) fourni
+   avec le parcours dans le fichier .txt. Il décrit le PARCOURS, pas la visite :
+   il voyage donc avec le .txt d'échange, au même titre que les étapes, et
+   n'est volontairement pas éditable dans le formulaire — un utilisateur qui
+   crée sa propre sortie n'a rien à y écrire.
+   Dessiné en SVG plutôt qu'avec le caractère ⓘ, absent de certaines polices
+   Android : il s'afficherait alors en carré vide.                            */
+function svgInfo(){
+  return '<svg viewBox="0 0 24 24" width="23" height="23" fill="none" '+
+    'stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">'+
+    /* Carré transparent : un navigateur qui ignorerait pointer-events trouve
+       malgré tout ici une surface peinte, donc cliquable, sur toute l'icône. */
+    '<rect x="0" y="0" width="24" height="24" fill="transparent" stroke="none"/>'+
+    '<circle cx="12" cy="12" r="9.2"/>'+
+    '<path d="M12 11.1v5.3"/>'+
+    '<circle cx="12" cy="7.7" r="1.1" fill="currentColor" stroke="none"/>'+
+    '</svg>';
+}
+/* Les sauts de ligne doubles du .txt deviennent des paragraphes. Le texte est
+   échappé avant affichage : il vient d'un fichier extérieur, jamais de HTML. */
+function texteEnParagraphes(t){
+  return String(t||"").split(/\n{2,}/).map(p=>p.trim()).filter(Boolean)
+    .map(p=>'<p>'+esc(p).replace(/\n/g,"<br>")+'</p>').join("");
+}
+async function ouvrirInfoParcours(){
+  const s=await dbLire(idCourant);
+  if(!s) return;
+  const texte=(s.infoParcours||"").trim();
+  ouvrirFeuille(
+    '<h3>À propos du parcours</h3>'+
+    '<div class="texte-info'+(texte?"":" vide")+'">'+
+      (texte ? texteEnParagraphes(texte)
+             : '<p>Pas d\'information disponible pour ce parcours.</p>')+
+    '</div>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille()">Fermer</button>');
 }
 
 /* ---------- État et navigation ---------- */
@@ -506,17 +727,27 @@ async function retour(){
 const MODES_LIB={pied:"À pied", velo:"Vélo", transports:"Transports", mixte:"Mixte"};
 async function afficherListe(){
   const sorties=(await dbTous()).sort((a,b)=>(a.numero||0)-(b.numero||0));
-  const visibles=sorties.filter(s=> filtreCourant==="toutes" || s.statut===filtreCourant);
+  /* E5 — l'étoile est un second axe : elle ne filtre pas sur le statut mais
+     sur le marqueur, et affiche donc les sorties faites comme celles à faire. */
+  const visibles=sorties.filter(s=>
+    filtreCourant==="toutes" ? true :
+    filtreCourant==="etoile" ? s.etoile===true :
+    s.statut===filtreCourant);
   const zone=document.getElementById("liste-sorties");
   if(!visibles.length){
-    zone.innerHTML='<div class="vide">'+(sorties.length
-      ? "Aucune sortie dans ce filtre."
-      : "Aucune sortie pour le moment.<br>Touchez « + » pour en créer une ou importer un fichier .txt.")+'</div>';
+    zone.innerHTML='<div class="vide">'+(!sorties.length
+      ? "Aucune sortie pour le moment.<br>Touchez « + » pour en créer une ou importer un fichier .txt."
+      : filtreCourant==="etoile"
+        ? "Aucune sortie étoilée.<br>Touchez l'étoile d'une sortie pour la marquer."
+        : "Aucune sortie dans ce filtre.")+'</div>';
   } else {
     zone.innerHTML=visibles.map(s=>{
+      /* E7 — à défaut de photo, le numéro de la sortie : Repérages est un
+         carnet, et les entrées d'un carnet sont numérotées. La zone cesse
+         d'être un trou pour devenir un élément d'identité.                  */
       const vignette = s.photos && s.photos.length
         ? '<img src="'+urlPhoto(s.photos[0])+'" alt="">'
-        : '◻';
+        : '<div class="num"><small>Parcours</small>'+(s.numero||"–")+'</div>';
       return '<article class="carte-sortie" onclick="voirDetail(\''+s.id+'\')">'+
         '<div class="carte-vignette">'+vignette+'</div>'+
         '<div class="carte-corps">'+
@@ -526,14 +757,28 @@ async function afficherListe(){
           '<span class="badge '+(s.statut==="faite"?"faite":"a-faire")+'">'+
             (s.statut==="faite" ? "Faite"+(s.dateRealisee? " · "+dateCourteFR(s.dateRealisee):"") : "À faire")+
           '</span>'+
-        '</div></article>';
+        '</div>'+
+        '<button type="button" class="carte-etoile'+(s.etoile?" on":"")+'" '+
+          'onclick="basculerEtoile(\''+s.id+'\', event, \'liste\')" '+
+          'aria-label="'+(s.etoile?"Retirer l\'étoile":"Étoiler cette sortie")+'">'+
+          svgEtoile(!!s.etoile)+'</button>'+
+        '</article>';
     }).join("");
   }
   afficherRappelSauvegarde(sorties.length);
 }
+function dessinerChipEtoile(){
+  const c=document.querySelector('.chip-etoile');
+  if(c) c.innerHTML=svgEtoile(c.classList.contains("actif"));
+}
 function changerFiltre(f){
+  /* Le filtre ★ se comporte en interrupteur : isolé à droite et de couleur
+     distincte, il ressemble à une bascule — un second tap doit donc l'éteindre
+     et rendre la liste complète, plutôt que d'obliger à passer par « Toutes ». */
+  if(f==="etoile" && filtreCourant==="etoile") f="toutes";
   filtreCourant=f;
   document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("actif", c.dataset.filtre===f));
+  dessinerChipEtoile();
   afficherListe();
 }
 
@@ -577,7 +822,16 @@ async function afficherDetail(id){
     '<div class="note"><button class="suppr-note" onclick="supprimerNote(\''+n.id+'\')" aria-label="Supprimer la note">✕</button>'+
     '<div class="date">'+dateFR(n.dateCreation)+'</div><p>'+esc(n.texte)+'</p></div>').join("");
   ecran.innerHTML=
-    '<div class="bandeau-titre"><div class="numero">Sortie '+(s.numero||"–")+'</div><h2>'+esc(s.titre)+'</h2></div>'+
+    '<div class="bandeau-titre">'+
+      '<button type="button" class="etoile-titre'+(s.etoile?" on":"")+'" '+
+        'onclick="basculerEtoile(\''+s.id+'\', event, \'detail\')" '+
+        'aria-label="'+(s.etoile?"Retirer l\'étoile":"Étoiler cette sortie")+'">'+
+        svgEtoile(!!s.etoile)+'</button>'+
+      '<button type="button" class="info-titre'+((s.infoParcours||"").trim()?" dispo":"")+'" '+
+        'onclick="ouvrirInfoParcours()" aria-label="À propos de ce parcours">'+
+        svgInfo()+'</button>'+
+      '<div class="numero">Sortie '+(s.numero||"–")+'</div>'+
+      '<h2 style="padding-right:6.1rem">'+esc(s.titre)+'</h2></div>'+
     '<div class="filet"></div>'+
 
     '<div class="bloc">'+
@@ -899,7 +1153,11 @@ async function partagerSortie(){
     "Parcours ("+MODES_TXT[s.modeDeplacement]+") :\n"+
     s.etapes.map(e=>e.nom).join("\n")+"\n"+
     "Pourquoi : "+(s.pourquoi||"")+"\n"+
-    "Intention : "+(s.intention||"")+"\n";
+    "Intention : "+(s.intention||"")+"\n"+
+    /* E7 — le texte informatif décrit le parcours, pas la visite : il part
+       avec le fichier, contrairement aux photos, notes et matériel. */
+    ((s.infoParcours||"").trim() ? "Info :\n"+s.infoParcours.trim()+"\n" : "")+
+    "\nRéf. parcours : "+(s.idParcours||"")+"\n";
   const nomFichier="sortie-"+(s.titre||"sans-titre").toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
       .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,50)+".txt";
@@ -928,7 +1186,13 @@ const LIBELLES=[
   {champ:"moment",    re:/^(moment(?:\s+id[ée]al)?|best time)\s*:\s*(.*)$/i},
   {champ:"itineraire",re:/^(parcours|itin[ée]raire|simple route|route)\s*(?:\(([^)]*)\))?\s*:\s*(.*)$/i},
   {champ:"pourquoi",  re:/^(pourquoi(?:\s+maintenant)?|why now)\s*:\s*(.*)$/i},
-  {champ:"intention", re:/^(intention(?:\s+cr[ée]ative)?|in-camera creative intention|creative intention)\s*:\s*(.*)$/i}
+  {champ:"intention", re:/^(intention(?:\s+cr[ée]ative)?|in-camera creative intention|creative intention)\s*:\s*(.*)$/i},
+  /* E7 — texte documentaire. Se place en dernier dans le bloc : tout ce qui
+     suit, lignes vides comprises, lui appartient jusqu'à la sortie suivante. */
+  {champ:"infoParcours", re:/^(info(?:rmations?)?|[àa]\s+savoir|notice|about|background)\s*:\s*(.*)$/i},
+  /* E6 — ligne technique ajoutée à l'export ; si elle a été supprimée en
+     éditant le fichier à la main, le rattrapage par titre prend le relais. */
+  {champ:"idParcours", re:/^(r[ée]f\.?\s*parcours|reference parcours)\s*:\s*(.*)$/i}
 ];
 function detecterMode(parenthese){
   const p=(parenthese||"").toLowerCase();
@@ -952,12 +1216,20 @@ function analyserTxt(texte){
     if(mTitre){
       if(courante) sorties.push(courante);
       courante={titre:mTitre[2].trim(), appareil:"", moment:"", modeDeplacement:"pied",
-                etapes:[], pourquoi:"", intention:""};
+                etapes:[], pourquoi:"", intention:"", infoParcours:""};
       champActif=null;
       continue;
     }
     if(!courante) continue;
-    if(!ligne){ if(champActif!=="etapes") champActif=null; continue; }
+    /* Une ligne vide ferme le champ en cours — sauf pour les étapes (déjà le
+       cas avant) et sauf pour le texte informatif, où elle marque une
+       séparation de paragraphe et non une fin de champ.                     */
+    if(!ligne){
+      if(champActif==="infoParcours"){
+        if(courante.infoParcours) courante.infoParcours+="\n\n";
+      } else if(champActif!=="etapes") champActif=null;
+      continue;
+    }
     let reconnu=false;
     for(const lib of LIBELLES){
       const m=ligne.match(lib.re);
@@ -978,12 +1250,17 @@ function analyserTxt(texte){
     if(reconnu) continue;
     if(champActif==="etapes"){
       courante.etapes.push({nom:ligne});
-    } else if(champActif && champActif!=="etapes"){
+    } else if(champActif==="infoParcours"){
+      /* pas de .trim() ici : il effacerait la séparation de paragraphe
+         que la ligne vide vient d'inscrire. */
+      courante.infoParcours += (!courante.infoParcours ? ""
+        : (/\n\n$/.test(courante.infoParcours) ? "" : " ")) + ligne;
+    } else if(champActif){
       courante[champActif]=(courante[champActif]+" "+ligne).trim();
     }
   }
   if(courante) sorties.push(courante);
-  return sorties;
+  return sorties.map(s=>{ s.infoParcours=(s.infoParcours||"").trim(); return s; });
 }
 let importEnAttente=[];
 document.getElementById("fichier-txt").addEventListener("change", async e=>{
@@ -1017,6 +1294,8 @@ function afficherApercuImport(){
           '<div><b>Mode :</b> '+MODES_LIB[t.modeDeplacement]+' · <b>Étapes :</b> '+t.etapes.length+'</div>'+
           '<div><b>Pourquoi :</b> '+esc((t.pourquoi||"—").slice(0,90))+((t.pourquoi||"").length>90?"…":"")+'</div>'+
           '<div><b>Intention :</b> '+esc((t.intention||"—").slice(0,90))+((t.intention||"").length>90?"…":"")+'</div>'+
+          '<div><b>Information :</b> '+((t.infoParcours||"").trim()
+            ? "texte fourni ("+(t.infoParcours.trim().length)+" signes)" : "aucune")+'</div>'+
         '</div>'+
       '</div>').join("")+
     '<button class="btn btn-ambre" onclick="validerImport()">Importer la sélection</button>';
@@ -1028,10 +1307,22 @@ async function validerImport(){
   let numero=tous.reduce((m,x)=>Math.max(m,x.numero||0),0);
   for(const t of retenues){
     numero++;
+    /* E6 — trois cas, dans cet ordre :
+       1. le fichier porte une référence de parcours → on la conserve telle
+          quelle, c'est ce qui rattachera cette copie aux autres ;
+       2. pas de référence, mais une sortie de même titre existe déjà ici →
+          on reprend son identifiant (filet de sécurité si la ligne a été
+          effacée à la main) ;
+       3. sinon, nouvel identifiant.                                        */
+    const refFichier=(t.idParcours||"").trim();
+    const jumelle = refFichier ? null
+      : tous.find(x=> normaliserTitre(x.titre)===normaliserTitre(t.titre) && x.idParcours);
     await dbEcrire(nouvelleSortie({
       titre:t.titre, numero, modeDeplacement:t.modeDeplacement,
       appareil:t.appareil, moment:t.moment, etapes:t.etapes,
-      pourquoi:t.pourquoi, intention:t.intention
+      pourquoi:t.pourquoi, intention:t.intention,
+      infoParcours:t.infoParcours||"",
+      idParcours: refFichier || (jumelle ? jumelle.idParcours : nouvelIdParcours())
     }));
   }
   importEnAttente=[];
@@ -1186,6 +1477,9 @@ async function demarrer(){
     for(const base of SORTIES_INITIALES) await dbEcrire(nouvelleSortie(base));
     localStorage.setItem("prechargementFait","1");
   }
+  await migrerV18();
+  await migrerV183();
+  dessinerChipEtoile();
   await afficherListe();
 }
 demarrer().catch(err=>{
