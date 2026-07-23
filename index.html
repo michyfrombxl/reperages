@@ -410,7 +410,7 @@ img{display:block;max-width:100%}
    Carnet de sorties photo — v1
    Fichier unique HTML/CSS/JS — persistance IndexedDB
    ========================================================= */
-const VERSION = "v1.8.5";
+const VERSION = "v1.8.6";
 const DATE_VERSION = "juillet 2026";
 const AUTEUR = "Michel Masquelier (michy)";
 const MAIL_AUTEUR = "michel.masquelier@gmail.com";
@@ -492,7 +492,7 @@ const SORTIES_INITIALES=[
   numero:1, modeDeplacement:"pied",
   appareil:"un appareil digital et un objectif normal ou un petit grand angle, pourquoi pas un Fuji X100 ou simplement son smartphone en mode photo (sans filtre).",
   moment:"Samedi, 7 h 00 - 9 h 30 au printemps ou en été pour avoir une belle lumière, un peu plus tard en hiver.",
-  etapes:[{nom:"Avenue Louis Bertrand"},{nom:"Boulevard Lambermont"},{nom:"Rue des Mimosas"},{nom:"Avenue Général Eisenhower"},{nom:"Parc Josaphat"},{nom:"Église Saint-Servais"}],
+  etapes:[{nom:"Avenue Louis Bertrand"},{nom:"Rue des Mimosas"},{nom:"Avenue Général Eisenhower"},{nom:"Parc Josaphat"},{nom:"Église Saint-Servais"}],
   pourquoi:"Tôt le matin, promeneurs de chiens, joggeurs et cafetiers qui ouvrent, longue lumière latérale sur les façades Art nouveau, le parc Josaphat presque vide.",
   intention:"Série entière cadrée dans des éléments architecturaux (portes, arbres, abris de tram) alternant avec des plans larges des rues ou avenues ; détail dans le parc qui rappelle un élément d'architecture ; pas de recadrage a posteriori, composer précisément dans le viseur, toujours en orientation paysage.",
   infoParcours:"Ce parcours séduit par son équilibre entre nature, patrimoine et qualité de vie. L'élégante avenue Louis Bertrand, bordée de remarquables façades Art nouveau et éclectiques, relie l'Église St-Servais au boulevard Lambermont. À quelques pas, le quartier des Fleurs, avec ses rues aux noms floraux et son ambiance résidentielle paisible, offre un cadre verdoyant particulièrement apprécié des promeneurs et des amateurs d'architecture. L'ensemble constitue l'un des secteurs les plus emblématiques et les plus recherchés de Schaerbeek. Le parc Josaphat est un poumon de 20 hectares niché au cœur de Schaerbeek.",
@@ -582,36 +582,42 @@ async function migrerV18(){
   }
 }
 
-/* ---------- Migration v1.8.3 : les trois parcours de référence ----------
-   Les sorties préchargées ont été réécrites (titres, étapes et textes revus,
-   texte informatif ajouté). Le préchargement n'ayant lieu qu'à la toute
-   première ouverture, les téléphones déjà installés gardent l'ancienne
-   version : il faut donc les mettre à jour ici.
+/* ---------- Mise à jour des trois parcours de référence ----------
+   Les parcours livrés avec l'app sont retouchés d'une version à l'autre. Le
+   préchargement n'ayant lieu qu'à la toute première ouverture, un téléphone
+   déjà installé garde la version qu'il avait : c'est ici qu'on le rattrape.
 
    Règle prudente, en deux temps :
-   1. si la fiche est restée telle qu'elle a été livrée (on le vérifie sur son
-      titre ET son intention, réduits à leurs lettres), personne n'y a touché :
-      on remplace le descriptif par la nouvelle version ;
+   1. si la fiche correspond mot pour mot à l'une des versions déjà livrées
+      (titre, intention ET étapes, réduits à leurs lettres), personne n'y a
+      touché : on la remplace par la version courante ;
    2. si elle a été retouchée, on n'écrase rien — on se contente d'ajouter le
-      texte informatif, qui manquait de toute façon.
+      texte informatif s'il manque.
    Dans les deux cas, photos, notes, statut, étoile, matériel et numéro sont
    conservés : rien de ce que l'utilisateur a produit n'est perdu.
-   La fonction se désamorce d'elle-même : après passage, l'empreinte ne
-   correspond plus.                                                            */
-const EMPREINTES_V182={
-  "rpg-bxl-josaphat":"schaerbeekquartierdesfleursparcjosaphat|serieentiereaf2personnescadreesdansdeselementsarchitecturauxportesarbresabrisdetrampasderecadrageaposterioricomposerprecisementdansleviseur",
-  "rpg-bxl-marolles":"garedumidimarchedesmarollesplacedujeudeballe|uneseuleimageparinteractionattendreungesteunregardouunepausesignificativeavantdedeclencherpenserleditingavantdappuyer",
-  "rpg-bxl-kanal":"tourtaxisquaidespenichesquartierkanal|seriecoherenteauformatcarreechellehumainefacealageometrieurbainehorizondroitviseurdepoitrinepourunpointdevuediscretmoinsfrontal"
+
+   La fonction se désamorce d'elle-même : la version courante ne figure jamais
+   dans la table, donc une fiche à jour n'est plus jamais réécrite. Les étapes
+   entrent dans l'empreinte depuis la v1.8.6 : sans elles, deux versions qui ne
+   diffèrent que par leur itinéraire seraient confondues.                      */
+function empreinteParcours(s){
+  return normaliserTitre(s.titre)+"|"+normaliserTitre(s.intention)+"|"+
+         normaliserTitre((s.etapes||[]).map(e=>e.nom).join(" "));
+}
+const EMPREINTES_LIVREES={
+  "rpg-bxl-josaphat":["schaerbeekquartierdesfleursparcjosaphat|serieentiereaf2personnescadreesdansdeselementsarchitecturauxportesarbresabrisdetrampasderecadrageaposterioricomposerprecisementdansleviseur|placedaillyavenuelouisbertrandruesduquartierdesfleursparcjosaphatetangetterrassesdescafes",
+    "schaerbeekdelavenuelouisbertrandauquartierdesfleurs4km|serieentierecadreedansdeselementsarchitecturauxportesarbresabrisdetramalternantavecdesplanslargesdesruesouavenuesdetaildansleparcquirappelleunelementdarchitecturepasderecadrageaposterioricomposerprecisementdansleviseurtoujoursenorientationpaysage|avenuelouisbertrandboulevardlambermontruedesmimosasavenuegeneraleisenhowerparcjosaphateglisesaintservais"],
+  "rpg-bxl-marolles":["garedumidimarchedesmarollesplacedujeudeballe|uneseuleimageparinteractionattendreungesteunregardouunepausesignificativeavantdedeclencherpenserleditingavantdappuyer|garedumidilesmarollesruehauteplacedujeudeballepalaisdejustice"],
+  "rpg-bxl-kanal":["tourtaxisquaidespenichesquartierkanal|seriecoherenteauformatcarreechellehumainefacealageometrieurbainehorizondroitviseurdepoitrinepourunpointdevuediscretmoinsfrontal|tourtaxischeminlelongducanalquaidespenichesquartierkanalsainctelette"]
 };
-async function migrerV183(){
-  const nouveaux=new Map(SORTIES_INITIALES.map(b=>[b.idParcours,b]));
+async function majParcoursLivres(){
+  const courants=new Map(SORTIES_INITIALES.map(b=>[b.idParcours,b]));
   const tous=await dbTous();
   for(const s of tous){
-    const neuf=nouveaux.get(s.idParcours);
-    if(!neuf) continue;                       // parcours personnel : on ne touche à rien
-    const empreinte=normaliserTitre(s.titre)+"|"+normaliserTitre(s.intention);
-    const intacte = empreinte===EMPREINTES_V182[s.idParcours];
-    if(intacte){
+    const neuf=courants.get(s.idParcours);
+    if(!neuf) continue;                       // parcours personnel : on n'y touche pas
+    const connues=EMPREINTES_LIVREES[s.idParcours]||[];
+    if(connues.includes(empreinteParcours(s))){
       Object.assign(s,{
         titre:neuf.titre, modeDeplacement:neuf.modeDeplacement,
         appareil:neuf.appareil, moment:neuf.moment,
@@ -1478,7 +1484,7 @@ async function demarrer(){
     localStorage.setItem("prechargementFait","1");
   }
   await migrerV18();
-  await migrerV183();
+  await majParcoursLivres();
   dessinerChipEtoile();
   await afficherListe();
 }
