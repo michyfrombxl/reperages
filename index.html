@@ -410,7 +410,7 @@ img{display:block;max-width:100%}
    Carnet de sorties photo — v1
    Fichier unique HTML/CSS/JS — persistance IndexedDB
    ========================================================= */
-const VERSION = "v1.8.6";
+const VERSION = "v1.8.7";
 const DATE_VERSION = "juillet 2026";
 const AUTEUR = "Michel Masquelier (michy)";
 const MAIL_AUTEUR = "michel.masquelier@gmail.com";
@@ -741,8 +741,16 @@ async function afficherListe(){
     s.statut===filtreCourant);
   const zone=document.getElementById("liste-sorties");
   if(!visibles.length){
+    /* Carnet entièrement vide : c'est le seul moment où proposer de remettre
+       les parcours livrés avec l'app. Le verrou de préchargement ne joue
+       qu'à la première ouverture, et il peut survivre à un effacement des
+       données — l'app se retrouve alors vide et sans moyen de se regarnir.
+       Le bouton donne la main plutôt que d'obliger à passer par les réglages
+       du navigateur, et il n'apparaît jamais tant qu'il reste une sortie. */
     zone.innerHTML='<div class="vide">'+(!sorties.length
-      ? "Aucune sortie pour le moment.<br>Touchez « + » pour en créer une ou importer un fichier .txt."
+      ? "Aucune sortie pour le moment.<br>Touchez « + » pour en créer une ou importer un fichier .txt."+
+        '<button class="btn btn-clair" style="margin-top:1.1rem" onclick="rechargerParcoursLivres()">'+
+        'Remettre les '+SORTIES_INITIALES.length+' parcours d\'origine</button>'
       : filtreCourant==="etoile"
         ? "Aucune sortie étoilée.<br>Touchez l'étoile d'une sortie pour la marquer."
         : "Aucune sortie dans ce filtre.")+'</div>';
@@ -786,6 +794,26 @@ function changerFiltre(f){
   document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("actif", c.dataset.filtre===f));
   dessinerChipEtoile();
   afficherListe();
+}
+
+/* Remet les parcours livrés avec l'app, sans toucher au reste. Une sortie
+   déjà présente sous le même identifiant de parcours n'est pas dupliquée :
+   on préfère ne rien faire plutôt que de créer un doublon silencieux.       */
+async function rechargerParcoursLivres(){
+  const tous=await dbTous();
+  const deja=new Set(tous.map(s=>s.idParcours));
+  let numero=tous.reduce((m,x)=>Math.max(m,x.numero||0),0);
+  let ajoutes=0;
+  for(const base of SORTIES_INITIALES){
+    if(deja.has(base.idParcours)) continue;
+    numero++;
+    await dbEcrire(nouvelleSortie(Object.assign({}, base, {numero})));
+    ajoutes++;
+  }
+  localStorage.setItem("prechargementFait","1");
+  await afficherListe();
+  toast(ajoutes ? (ajoutes>1 ? ajoutes+" parcours rechargés." : "Parcours rechargé.")
+                : "Ces parcours sont déjà dans le carnet.", 3200);
 }
 
 /* ---------- Rappel de sauvegarde ---------- */
@@ -1364,6 +1392,7 @@ async function ouvrirReglages(){
     '<button class="btn btn-clair" onclick="window.open(URL_KOFI,\'_blank\')">Soutenir le projet ☕</button>'+
     '<button class="btn btn-plein" onclick="exporterSauvegarde()">Sauvegarder tout (fichier)</button>'+
     '<button class="btn btn-clair" onclick="fermerFeuille();document.getElementById(\'fichier-restauration\').click()">Restaurer une sauvegarde</button>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille();rechargerParcoursLivres()">Remettre les parcours d\'origine</button>'+
     '<p style="margin-top:.4rem">La sauvegarde est un fichier unique (sorties, photos et notes incluses) à ranger sur votre ordinateur ou votre drive. La restauration remplace tout le contenu actuel de l\'app.</p>'+
     '<p style="margin-bottom:0;font-size:.78rem;text-align:center">© 2026 '+AUTEUR+' — Tous droits réservés.</p>');
 }
