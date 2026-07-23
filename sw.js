@@ -10,7 +10,7 @@
    force le rechargement des fichiers.
    ============================================================ */
 
-const APP_VERSION = "1.8.6";
+const APP_VERSION = "1.8.7";
 const CACHE_NAME = "reperages-v" + APP_VERSION;
 
 // Fichiers constituant la « coquille » de l'app (les données,
