@@ -410,7 +410,7 @@ img{display:block;max-width:100%}
    Carnet de sorties photo — v1
    Fichier unique HTML/CSS/JS — persistance IndexedDB
    ========================================================= */
-const VERSION = "v1.8.9";
+const VERSION = "v1.8.11";
 const DATE_VERSION = "juillet 2026";
 const AUTEUR = "Michel Masquelier (michy)";
 const MAIL_AUTEUR = "michel.masquelier@gmail.com";
@@ -872,8 +872,6 @@ async function afficherDetail(id){
       '<div class="info-ligne"><span class="cle">Appareil</span><span>'+esc(s.appareil||"—")+'</span></div>'+
       '<div class="info-ligne"><span class="cle">Moment idéal</span><span>'+esc(s.moment||"—")+'</span></div>'+
       '<div class="info-ligne"><span class="cle">Déplacement</span><span>'+MODES_LIB[s.modeDeplacement]+'</span></div>'+
-      (s.materielComplementaire
-        ? '<div class="info-ligne"><span class="cle">Matériel</span><span>'+esc(s.materielComplementaire)+'</span></div>' : "")+
       '<div class="info-ligne"><span class="cle">Statut</span><span>'+
         (s.statut==="faite" ? "Faite"+(s.dateRealisee? " le "+dateCourteFR(s.dateRealisee):"") : "À faire")+'</span></div>'+
     '</div>'+
@@ -1087,7 +1085,7 @@ async function ouvrirFormulaire(id){
   const ecran=document.getElementById("ecran-form");
   ecran.innerHTML=
     '<div class="champ"><label for="f-titre">Titre du parcours</label>'+
-      '<input type="text" id="f-titre" value="'+esc(s.titre)+'" placeholder="Quartier A → Lieu B → Point C"></div>'+
+      '<input type="text" id="f-titre" value="'+esc(s.titre)+'" placeholder="Nom de votre sortie"></div>'+
     '<div class="champ"><label for="f-mode">Mode de déplacement</label>'+
       '<select id="f-mode">'+
         ["pied","velo","transports","mixte"].map(m=>'<option value="'+m+'"'+(s.modeDeplacement===m?" selected":"")+'>'+MODES_LIB[m]+'</option>').join("")+
@@ -1103,8 +1101,6 @@ async function ouvrirFormulaire(id){
       '<textarea id="f-pourquoi" placeholder="Lumière, ambiance, événement…">'+esc(s.pourquoi)+'</textarea></div>'+
     '<div class="champ"><label for="f-intention">Intention créative</label>'+
       '<textarea id="f-intention" placeholder="Contrainte artistique volontaire pour la sortie">'+esc(s.intention)+'</textarea></div>'+
-    '<div class="champ"><label for="f-materiel">Matériel complémentaire <span style="color:var(--texte-2);font-weight:400;text-transform:none;letter-spacing:0">(facultatif)</span></label>'+
-      '<input type="text" id="f-materiel" value="'+esc(s.materielComplementaire||"")+'" placeholder="Films, filtres, trépied, cartes SD…"></div>'+
     '<button class="btn btn-ambre" style="margin-top:.5rem" onclick="enregistrerFormulaire()">'+(id?"Enregistrer les modifications":"Créer la sortie")+'</button>';
   dessinerEtapesEdition();
   montrerEcran("form");
@@ -1145,8 +1141,10 @@ async function enregistrerFormulaire(){
     moment:document.getElementById("f-moment").value.trim(),
     etapes,
     pourquoi:document.getElementById("f-pourquoi").value.trim(),
-    intention:document.getElementById("f-intention").value.trim(),
-    materielComplementaire:document.getElementById("f-materiel").value.trim()
+    intention:document.getElementById("f-intention").value.trim()
+    /* materielComplementaire a été retiré (v1.8.11) : plus saisi, plus
+       affiché. Le champ subsiste, vide, dans le modèle par compatibilité avec
+       d'anciennes sauvegardes ou d'anciens .txt ; on ne le relit pas ici. */
   });
   await dbEcrire(s);
   const etaitCreation=!idCourant;
