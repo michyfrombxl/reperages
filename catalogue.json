@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "miseAJour": "2026-08-06",
+  "parcours": [
+    {
+      "idParcours": "rpg-bxl-cureghem",
+      "fichier": "rpg-bxl-cureghem.txt",
+      "titre": "Cureghem, entre Gare du midi et ancienne école des vétérinaires (2,8 km)"
+    },
+    {
+      "idParcours": "rpg-bxl-centre",
+      "fichier": "rpg-bxl-centre.txt",
+      "titre": "Bruxelles centre (3,8 km)"
+    },
+    {
+      "idParcours": "rpg-bxl-jette",
+      "fichier": "rpg-bxl-jette.txt",
+      "titre": "Jette - Ganshoren (3,7 km)"
+    }
+  ]
+}
