@@ -265,6 +265,20 @@ img{display:block;max-width:100%}
 .apercu-detail{font-size:.85rem;color:var(--texte-2);padding-left:2rem}
 .apercu-detail b{color:var(--texte);font-weight:600}
 
+/* ---------- Catalogue (E9) ---------- */
+.catalogue-item{
+  display:flex;align-items:center;gap:.7rem;
+  background:var(--carte);border:1px solid var(--bord);border-radius:12px;
+  padding:.85rem 1rem;margin-bottom:.7rem;cursor:pointer;
+}
+.catalogue-item input[type=checkbox]{width:22px;height:22px;accent-color:var(--ambre);flex:none}
+.catalogue-titre{font-size:.95rem;font-weight:600;line-height:1.3}
+.catalogue-item.possede{opacity:.5;cursor:default}
+.catalogue-etat{
+  margin-left:auto;font-size:.72rem;font-weight:600;color:var(--texte-2);
+  white-space:nowrap;padding-left:.6rem;
+}
+
 /* ---------- Superpositions ---------- */
 .voile{
   position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:40;
@@ -372,6 +386,9 @@ img{display:block;max-width:100%}
 <!-- ================= IMPORT ================= -->
 <main class="ecran" id="ecran-import"></main>
 
+<!-- ================= CATALOGUE ================= -->
+<main class="ecran" id="ecran-catalogue"></main>
+
 <button class="fab" id="fab" onclick="ouvrirMenuPlus()" aria-label="Ajouter une sortie">+</button>
 
 <!-- Feuilles (menus du bas) -->
@@ -410,8 +427,8 @@ img{display:block;max-width:100%}
    Carnet de sorties photo — v1
    Fichier unique HTML/CSS/JS — persistance IndexedDB
    ========================================================= */
-const VERSION = "v1.8.11";
-const DATE_VERSION = "juillet 2026";
+const VERSION = "v1.9.0";
+const DATE_VERSION = "août 2026";
 const AUTEUR = "Michel Masquelier (michy)";
 const MAIL_AUTEUR = "michel.masquelier@gmail.com";
 const URL_KOFI = "https://ko-fi.com/michelmasquelier";
@@ -719,7 +736,7 @@ function montrerEcran(nom, empiler=true){
   document.getElementById("fab").style.display = surListe? "flex":"none";
   document.getElementById("titre-appbar").innerHTML = surListe
     ? 'Repérages <span class="version">'+VERSION+'</span>'
-    : ({detail:"Fiche sortie", form:(idCourant?"Modifier la sortie":"Nouvelle sortie"), import:"Importer un fichier"}[nom]||"Repérages");
+    : ({detail:"Fiche sortie", form:(idCourant?"Modifier la sortie":"Nouvelle sortie"), import:"Importer un fichier", catalogue:"Catalogue de parcours"}[nom]||"Repérages");
   window.scrollTo(0,0);
 }
 async function retour(){
@@ -1208,8 +1225,99 @@ async function partagerSortie(){
 /* ---------- Menu « + » ---------- */
 function ouvrirMenuPlus(){
   ouvrirFeuille('<h3>Nouvelle sortie</h3>'+
+    '<button class="btn btn-clair" onclick="fermerFeuille();ouvrirCatalogue()">Parcourir le catalogue</button>'+
     '<button class="btn btn-clair" onclick="fermerFeuille();document.getElementById(\'fichier-txt\').click()">Importer un fichier .txt</button>'+
     '<button class="btn btn-clair" onclick="fermerFeuille();ouvrirFormulaire()">Créer à la main</button>');
+}
+
+/* ---------- E9 — Catalogue de parcours ----------
+   La liste et les fichiers vivent sur GitHub, à côté de l'app :
+   « catalogue.json » (l'index) et le dossier « parcours/ » (un .txt par
+   parcours). Le service worker laisse passer ces requêtes directement au
+   réseau (jamais mises en cache) : le catalogue ne fonctionne donc qu'en
+   ligne, ce qui est assumé. Un parcours déjà présent dans le carnet — même
+   idParcours — est grisé et non cochable, pour ne créer aucun doublon.     */
+const CATALOGUE_URL = "catalogue.json";
+const PARCOURS_DIR  = "parcours/";
+let catalogueEnAttente = [];
+
+async function ouvrirCatalogue(){
+  montrerEcran("catalogue");
+  const ecran=document.getElementById("ecran-catalogue");
+  ecran.innerHTML='<p style="color:var(--texte-2);padding:1rem .1rem">Chargement du catalogue…</p>';
+  let index;
+  try{
+    const rep=await fetch(CATALOGUE_URL+"?t="+Date.now(), {cache:"reload"});
+    if(!rep.ok) throw new Error("HTTP "+rep.status);
+    index=await rep.json();
+  }catch(e){
+    ecran.innerHTML=
+      '<div class="apercu-sortie"><p style="color:var(--texte-2);margin-bottom:.9rem">'+
+        'Le catalogue n\'a pas pu être chargé. Il nécessite une connexion internet : '+
+        'vérifiez votre réseau, puis réessayez.</p>'+
+        '<button class="btn btn-clair" onclick="ouvrirCatalogue()">Réessayer</button></div>';
+    return;
+  }
+  const liste=(index && index.parcours) || [];
+  const possedes=new Set((await dbTous()).map(s=>s.idParcours));
+  catalogueEnAttente=liste.map(p=>({
+    idParcours:p.idParcours, titre:p.titre||p.idParcours, fichier:p.fichier,
+    possede:possedes.has(p.idParcours), inclure:false
+  }));
+  afficherCatalogue();
+}
+
+function afficherCatalogue(){
+  const ecran=document.getElementById("ecran-catalogue");
+  if(!catalogueEnAttente.length){
+    ecran.innerHTML='<p style="color:var(--texte-2);padding:1rem .1rem">Le catalogue est vide pour le moment.</p>';
+    return;
+  }
+  const restants=catalogueEnAttente.filter(p=>!p.possede).length;
+  ecran.innerHTML=
+    '<p style="font-size:.92rem;color:var(--texte-2);margin-bottom:1rem">'+
+      'Cochez les parcours à ajouter à votre carnet. '+
+      'Ceux que vous possédez déjà sont grisés.</p>'+
+    catalogueEnAttente.map((p,i)=>
+      '<label class="catalogue-item'+(p.possede?" possede":"")+'">'+
+        '<input type="checkbox" '+(p.possede?"disabled":"")+(p.inclure?" checked":"")+
+          ' onchange="catalogueEnAttente['+i+'].inclure=this.checked">'+
+        '<span class="catalogue-titre">'+esc(p.titre)+'</span>'+
+        (p.possede?'<span class="catalogue-etat">déjà dans votre carnet</span>':"")+
+      '</label>').join("")+
+    (restants
+      ? '<button class="btn btn-ambre" id="btn-import-catalogue" onclick="importerDepuisCatalogue()">Ajouter la sélection</button>'
+      : '<p style="color:var(--texte-2);margin-top:1rem">Vous possédez déjà tous les parcours du catalogue.</p>');
+}
+
+async function importerDepuisCatalogue(){
+  const choisis=catalogueEnAttente.filter(p=>p.inclure && !p.possede);
+  if(!choisis.length){ toast("Aucun parcours sélectionné."); return; }
+  const btn=document.getElementById("btn-import-catalogue");
+  if(btn){ btn.disabled=true; btn.textContent="Téléchargement…"; }
+  const textes=[];
+  try{
+    for(const p of choisis){
+      const rep=await fetch(PARCOURS_DIR+p.fichier+"?t="+Date.now(), {cache:"reload"});
+      if(!rep.ok) throw new Error(p.fichier+" : HTTP "+rep.status);
+      textes.push(await rep.text());
+    }
+  }catch(e){
+    toast("Téléchargement impossible. Vérifiez votre connexion.", 4500);
+    if(btn){ btn.disabled=false; btn.textContent="Ajouter la sélection"; }
+    return;
+  }
+  const trouvees=analyserTxt(textes.join("\n\n"));
+  if(!trouvees.length){
+    toast("Aucun parcours lisible dans le catalogue.", 4500);
+    if(btn){ btn.disabled=false; btn.textContent="Ajouter la sélection"; }
+    return;
+  }
+  /* On réutilise tel quel le pipeline d'import du fichier .txt :
+     validerImport() conserve l'idParcours porté par chaque fichier, écrit
+     les sorties, puis ramène à la liste avec un message.                   */
+  importEnAttente=trouvees.map(t=>Object.assign({inclure:true}, t));
+  await validerImport();
 }
 
 /* ---------- Lecture du fichier .txt (FR / EN) ---------- */
