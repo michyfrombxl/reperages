@@ -10,7 +10,7 @@
    force le rechargement des fichiers.
    ============================================================ */
 
-const APP_VERSION = "1.8.11";
+const APP_VERSION = "1.9.0";
 const CACHE_NAME = "reperages-v" + APP_VERSION;
 
 // Fichiers constituant la « coquille » de l'app (les données,
@@ -76,6 +76,15 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.origin !== self.location.origin) {
     return; // on ne touche pas aux requêtes externes (ex. Google Maps)
+  }
+
+  /* Catalogue (E9) : l'index et les fichiers parcours doivent toujours être
+     frais. On laisse le navigateur les chercher au réseau sans jamais les
+     mettre en cache — sans quoi la stratégie « cache d'abord » plus bas les
+     figerait au premier chargement. Le catalogue ne fonctionne donc qu'en
+     ligne, ce qui est assumé : hors connexion, l'app affiche un message. */
+  if (url.pathname.endsWith("/catalogue.json") || url.pathname.includes("/parcours/")) {
+    return;
   }
 
   if (event.request.mode === "navigate") {
